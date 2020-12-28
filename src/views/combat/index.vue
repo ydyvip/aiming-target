@@ -124,13 +124,13 @@ export default {
       createjs.Ticker.setFPS(60);
       createjs.Ticker.addEventListener("tick", this.doTicker);
 
-      // 绘制障碍物
-      this.envConfig.circulars.map(params => {
-        this.paintingObstacle(params);
-      });
       // 绘制单位
       this.unitsConfig.map(params => {
         this.paintingTarget(params);
+      });
+      // 绘制障碍物
+      this.envConfig.circulars.map(params => {
+        this.paintingObstacle(params);
       });
     },
 
@@ -165,18 +165,18 @@ export default {
     },
 
     // 绘制圆形
-    drawCircle(name, color, density) {
+    drawCircle(name, color, fillColor, density) {
       let shape = new createjs.Shape();
       shape.name = name;
       shape.graphics
-        .beginFill("#fff")
+        .beginFill(fillColor)
         .beginStroke(color)
         .drawCircle(0, 0, density);
       return shape;
     },
 
     // 绘制扇区
-    drawSector(name, x, y, r, angle, startFrom, color) {
+    drawSector(name, x, y, r, angle, startAngle, color) {
       let shape = new createjs.Shape();
       shape.name = name;
       shape.graphics.clear();
@@ -197,14 +197,14 @@ export default {
 
       angle = Math.abs(angle) > 360 ? 360 : angle;
       //为了使方法方便使用，这里的起始角度和扇形弧度都用角度表示，由于三角函数用的弧度制，这里先转换为弧度。
-      startFrom = (startFrom * Math.PI) / 180;
+      startAngle = (startAngle * Math.PI) / 180;
 
-      let x1 = x + r * Math.cos(startFrom);
-      let y1 = y + r * Math.sin(startFrom);
-      let endAngle = startFrom + (angle * Math.PI) / 180;
+      let x1 = x + r * Math.cos(startAngle);
+      let y1 = y + r * Math.sin(startAngle);
+      let endAngle = startAngle + (angle * Math.PI) / 180;
 
       shape.graphics.lineTo(x1, y1);
-      shape.graphics.arc(x, y, r, startFrom, endAngle, false);
+      shape.graphics.arc(x, y, r, startAngle, endAngle, false);
 
       if (angle != 360) {
         shape.graphics.lineTo(x, y);
@@ -233,7 +233,7 @@ export default {
       this.units.set(name, container);
 
       // 绘制单位
-      const circle = this.drawCircle("circle", name, density);
+      const circle = this.drawCircle("circle", name, "white", density);
 
       // 绘制攻击线
       const aimingTo = this.drawLine("aimingTo", name);
@@ -267,7 +267,7 @@ export default {
     // 绘制障碍物体
     paintingObstacle(params) {
       const { name, type, r, position } = params;
-      const obstacle = this.drawCircle(name, "black", r);
+      const obstacle = this.drawCircle(name, "black", "#e1e1e1", r);
       obstacle.x = position.x;
       obstacle.y = position.y;
 
