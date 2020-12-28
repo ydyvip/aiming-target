@@ -34,7 +34,7 @@ import { cloneDeep } from "lodash";
 import createjs from "createjs-npm";
 import socketMap from "@/api/socket";
 import { EventType, emitter } from "@/EventEmitter";
-import { hexToRgba } from "@/utils";
+
 export default {
   name: "Combat",
   data() {
@@ -49,7 +49,7 @@ export default {
         {
           name: "red",
           viewDistance: 300, // 视线距离
-          viewColor: "#ff0000",
+          viewColor: "0xff0000",
           viewAngle: 170, // 视线夹角
           viewRotation: 0,
           density: 4,
@@ -61,7 +61,7 @@ export default {
         {
           name: "blue",
           viewDistance: 300,
-          viewColor: "#0000ff",
+          viewColor: "0x0000ff",
           viewAngle: 170,
           viewRotation: 0,
           density: 4,
@@ -138,12 +138,30 @@ export default {
     drawLine(name, color) {
       let shape = new createjs.Shape();
       shape.name = name;
-      shape.graphics
-        .beginStroke(color)
-        .setStrokeStyle(1)
-        .moveTo(0, 0)
-        .lineTo(1000, 0);
+      shape.graphics.clear();
+      shape.graphics.beginStroke(color).setStrokeStyle(1);
+      // .moveTo(0, 0)
+      // .lineTo(1000, 0);
+      this.drawDashLine(shape.graphics, 0, 0, 1000, 0, 5);
+
       return shape;
+    },
+
+    // 绘制虚线条
+    drawDashLine(g, x1, y1, x2, y2, dashLength) {
+      let dashLen = dashLength === undefined ? 5 : dashLength,
+        xpos = x2 - x1, //得到横向的宽度;
+        ypos = y2 - y1, //得到纵向的高度;
+        numDashes = Math.floor(Math.sqrt(xpos * xpos + ypos * ypos) / dashLen);
+      //利用正切获取斜边的长度除以虚线长度，得到要分为多少段;
+      for (let i = 0; i < numDashes; i++) {
+        if (i % 2 === 0) {
+          g.moveTo(x1 + (xpos / numDashes) * i, y1 + (ypos / numDashes) * i);
+          //有了横向宽度和多少段，得出每一段是多长，起点 + 每段长度 * i = 要绘制的起点；
+        } else {
+          g.lineTo(x1 + (xpos / numDashes) * i, y1 + (ypos / numDashes) * i);
+        }
+      }
     },
 
     // 绘制圆形
@@ -163,7 +181,10 @@ export default {
       shape.name = name;
       shape.graphics.clear();
       shape.graphics.beginRadialGradientFill(
-        [hexToRgba(color, 1), hexToRgba(color, 0)],
+        [
+          createjs.Graphics.getRGB(color, 1),
+          createjs.Graphics.getRGB(color, 0)
+        ],
         [0, 1],
         0,
         0,
