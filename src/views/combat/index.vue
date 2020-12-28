@@ -34,6 +34,7 @@ import { cloneDeep } from "lodash";
 import createjs from "createjs-npm";
 import socketMap from "@/api/socket";
 import { EventType, emitter } from "@/EventEmitter";
+import { hexToRgba } from "@/utils";
 export default {
   name: "Combat",
   data() {
@@ -48,10 +49,10 @@ export default {
         {
           name: "red",
           viewDistance: 300, // 视线距离
-          viewColor: "rgba(255,0,0,.3)",
+          viewColor: "#ff0000",
           viewAngle: 170, // 视线夹角
+          viewRotation: 0,
           density: 4,
-          rotation: 0,
           position: {
             x: 0,
             y: 0
@@ -60,10 +61,10 @@ export default {
         {
           name: "blue",
           viewDistance: 300,
-          viewColor: "rgba(0,0,255,.3)",
+          viewColor: "#0000ff",
           viewAngle: 170,
+          viewRotation: 0,
           density: 4,
-          rotation: 0,
           position: {
             x: 0,
             y: 0
@@ -104,6 +105,7 @@ export default {
       this.init();
       console.log("env", data);
     });
+    this.init();
 
     this.syncSocket();
   },
@@ -124,88 +126,53 @@ export default {
 
       // 绘制障碍物
       this.envConfig.circulars.map(params => {
-        this.drawObstacle(params);
+        this.paintingObstacle(params);
       });
       // 绘制单位
       this.unitsConfig.map(params => {
-        this.drawTarget(params);
+        this.paintingTarget(params);
       });
     },
+
+    // 绘制线条
+    drawLine(name, color) {
+      let shape = new createjs.Shape();
+      shape.name = name;
+      shape.graphics
+        .beginStroke(color)
+        .setStrokeStyle(1)
+        .moveTo(0, 0)
+        .lineTo(1000, 0);
+      return shape;
+    },
+
     // 绘制圆形
     drawCircle(name, color, density) {
-      let circle = new createjs.Shape();
-      circle.graphics
+      let shape = new createjs.Shape();
+      shape.name = name;
+      shape.graphics
         .beginFill("#fff")
         .beginStroke(color)
         .drawCircle(0, 0, density);
-      return circle;
+      return shape;
     },
-    // 绘制目标单位
-    drawTarget(params) {
-      const {
-        name,
-        viewDistance,
-        viewColor,
-        viewAngle,
-        density,
-        rotation,
-        position
-      } = params;
-      // 绘制外部容器
-      const container = new createjs.Container();
-      // 添加形状实例到舞台显示列表
-      this.stage.addChild(container);
-      // 创建一个形状的显示对象
-      this.units.set(name, container);
 
-      // 绘制单位
-      const circle = this.drawCircle(name, name, density);
-
-      // 形状实例的设置位置
-      const currentUnit = this.units.get(name);
-
-      // 绘制目视扇区
-      const viewVector = this.drawSector(
-        circle.x,
-        circle.y,
-        viewDistance,
-        viewAngle,
-        rotation,
-        viewColor
-      );
-
-      // 加入容器
-      container.addChild(circle);
-      // 目视扇区加入容器
-      container.addChild(viewVector);
-
-      // 绑定事件
-      // this.bindMouseMove(container);
-    },
-    // 绘制障碍物体
-    drawObstacle(params) {
-      const { name, type, r, position } = params;
-      const obstacle = this.drawCircle(name, "black", r);
-      obstacle.x = position.x;
-      obstacle.y = position.y;
-
-      this.stage.addChild(obstacle);
-    },
     // 绘制扇区
-    drawSector(x, y, r, angle, startFrom, color) {
-      let vector = new createjs.Shape();
-      vector.graphics.clear();
-      vector.graphics.beginRadialGradientFill(
-        [color, color],
+    drawSector(name, x, y, r, angle, startFrom, color) {
+      let shape = new createjs.Shape();
+      shape.name = name;
+      shape.graphics.clear();
+      shape.graphics.beginRadialGradientFill(
+        [hexToRgba(color, 1), hexToRgba(color, 0)],
         [0, 1],
-        100,
-        100,
         0,
-        100,
-        100,
-        50
+        0,
+        0,
+        0,
+        0,
+        300
       );
-      vector.graphics.moveTo(x, y);
+      shape.graphics.moveTo(x, y);
 
       angle = Math.abs(angle) > 360 ? 360 : angle;
       //为了使方法方便使用，这里的起始角度和扇形弧度都用角度表示，由于三角函数用的弧度制，这里先转换为弧度。
@@ -215,15 +182,77 @@ export default {
       let y1 = y + r * Math.sin(startFrom);
       let endAngle = startFrom + (angle * Math.PI) / 180;
 
-      vector.graphics.lineTo(x1, y1);
-      vector.graphics.arc(x, y, r, startFrom, endAngle, false);
+      shape.graphics.lineTo(x1, y1);
+      shape.graphics.arc(x, y, r, startFrom, endAngle, false);
 
       if (angle != 360) {
-        vector.graphics.lineTo(x, y);
+        shape.graphics.lineTo(x, y);
       }
-      vector.graphics.endFill();
-      return vector;
+      shape.graphics.endFill();
+      return shape;
     },
+
+    // 绘制目标单位
+    paintingTarget(params) {
+      const {
+        name,
+        viewDistance,
+        viewColor,
+        viewAngle,
+        viewRotation,
+        density,
+        position
+      } = params;
+
+      // 绘制外部容器
+      const container = new createjs.Container();
+      // 添加形状实例到舞台显示列表
+      this.stage.addChild(container);
+      // 创建一个形状的显示对象
+      this.units.set(name, container);
+
+      // 绘制单位
+      const circle = this.drawCircle("circle", name, density);
+
+      // 绘制攻击线
+      const aimingTo = this.drawLine("aimingTo", name);
+
+      // 修正为正面角度
+      aimingTo.rotation = 170 / 2;
+      aimingTo.alpha = 0;
+
+      // 绘制目视扇区
+      const viewVector = this.drawSector(
+        "viewVector",
+        circle.x,
+        circle.y,
+        viewDistance,
+        viewAngle,
+        viewRotation,
+        viewColor
+      );
+
+      // 加入容器
+      container.addChild(circle);
+      // 攻击线加入容器
+      container.addChild(aimingTo);
+      // 目视扇区加入容器
+      container.addChild(viewVector);
+
+      // 绑定事件
+      // this.bindMouseMove(container);
+    },
+
+    // 绘制障碍物体
+    paintingObstacle(params) {
+      const { name, type, r, position } = params;
+      const obstacle = this.drawCircle(name, "black", r);
+      obstacle.x = position.x;
+      obstacle.y = position.y;
+
+      this.stage.addChild(obstacle);
+    },
+
     // todo test绑定事件mousemove
     bindMouseMove(graph) {
       let oldX;
@@ -252,16 +281,24 @@ export default {
     syncSocket() {
       emitter.on(EventType.PURSUER, data => {
         let currentUnit = this.units.get("red");
+        let aimingTo = currentUnit.getChildByName("aimingTo");
+
         currentUnit.x = data.x;
         currentUnit.y = data.y;
         currentUnit.rotation = data.angle - 180 - 170 / 2;
+
+        aimingTo.alpha = data.attacking ? 1 : 0;
         this.pushLog({ "RED_INFO：": data });
       });
       emitter.on(EventType.ESCAPER, data => {
         let currentUnit = this.units.get("blue");
+        let aimingTo = currentUnit.getChildByName("aimingTo");
+
         currentUnit.x = data.x;
         currentUnit.y = data.y;
         currentUnit.rotation = data.angle - 180 - 170 / 2;
+
+        aimingTo.alpha = data.attacking ? 1 : 0;
         this.pushLog({ "BLUE_INFO：": data });
       });
     },
