@@ -34,4 +34,8 @@ socketMap.on("pursuer", data => {
   emitter.emit(EventType.PURSUER, data);
 });
 
+socketMap.on("action", data => {
+  emitter.emit(EventType.ACTION, data);
+});
+
 export default socketMap;

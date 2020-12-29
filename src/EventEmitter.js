@@ -14,7 +14,9 @@ const EventType = {
   // 追击方
   PURSUER: "pursuer",
   // 躲避方
-  ESCAPER: "escaper"
+  ESCAPER: "escaper",
+  // 动作处理
+  ACTION: "action"
 };
 
 class EventEmitter {
