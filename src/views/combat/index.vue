@@ -117,8 +117,7 @@ export default {
 
       // todo: test properties
       t: 0, // 开始时间
-      interframetime: 1000, // 测试帧数
-      waypoints: null
+      waypointsLine: null
     };
   },
   computed: {},
@@ -160,7 +159,7 @@ export default {
     this.syncSocket();
 
     // todo: test
-    this.animateActions(0, actionRecords);
+    // this.animateActions(0, actionRecords);
   },
   destroy() {
     socketMap.close();
@@ -244,7 +243,7 @@ export default {
     },
 
     // 绘制路径
-    drawWaypoints(name, paths, color, stroke = 1) {
+    drawWaypointsLine(name, paths, color, stroke = 1) {
       let shape = new createjs.Shape();
       shape.name = name;
       shape.graphics.clear();
@@ -506,11 +505,17 @@ export default {
 
       // path
       emitter.on(EventType.PATH, data => {
-        this.stage.removeChild(this.waypoints);
-        this.waypoints = this.drawWaypoints("pathTest", data || [], "yellow");
-        this.stage.addChild(this.waypoints);
+        const waypoints = data || [];
+        this.stage.removeChild(this.waypointsLine);
+        this.waypointsLine = this.drawWaypointsLine(
+          "pathTest",
+          waypoints,
+          "yellow"
+        );
+        this.stage.addChild(this.waypointsLine);
+        this.animateActions(0, waypoints);
 
-        // this.pushLog({ "PATH_INFO：": data });
+        // this.pushLog({ "PATH_INFO：": waypoints });
       });
     },
 
@@ -583,7 +588,7 @@ export default {
 
       setTimeout(() => {
         Actions.forEach(Frame => {
-          this.animateFrame(this.interframetime, Frame);
+          this.animateFrame(TIMEFRAME, Frame);
         });
       }, this.t);
     },
