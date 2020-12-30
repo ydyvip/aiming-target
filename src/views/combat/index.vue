@@ -19,6 +19,23 @@
           value="暂停"
           @click="handleSendCommand('pause')"
         />
+        <input
+          class="btn"
+          type="button"
+          value="移动"
+          @click="handleSendCommand('controls', { cmd: 1 })"
+        />
+        <input
+          class="btn"
+          type="button"
+          value="发送坐标"
+          @click="
+            handleSendCommand('controls', {
+              cmd: 2,
+              position: { x: 50, y: 50 }
+            })
+          "
+        />
       </div>
       <ul class="c-logs">
         <li v-for="(log, i) in logs" :key="i">
@@ -34,19 +51,27 @@ import { cloneDeep } from "lodash";
 import createjs from "createjs-npm";
 import socketMap from "@/api/socket";
 import { EventType, emitter } from "@/EventEmitter";
+import { actionRecords } from "./records";
 
 const viewDistance = 50; // 视线距离
 const viewAngle = 124; // 视线夹角
+
+const mapImg = require("@/assets/map-campaign-1.png"); // 地图背景
+const mapScale = 10; // 放大倍
+
+const TIMEFRAME = 1000; // 帧数
 
 export default {
   name: "Combat",
   data() {
     return {
+      isPlanning: false, // 是否为规划模式
+      isStarted: false,
       stage: null,
       envConfig: {
         circulars: [],
-        xsize: 1000,
-        ysize: 1300
+        xsize: 130 * mapScale,
+        ysize: 100 * mapScale
       },
       unitsConfig: [
         {
@@ -72,11 +97,28 @@ export default {
             x: 0,
             y: 0
           }
+        },
+        {
+          name: "yellow",
+          viewDistance,
+          viewColor: "0xffff00",
+          viewAngle,
+          viewRotation: 0,
+          density: 4,
+          position: {
+            x: 0,
+            y: 500
+          }
         }
       ],
       units: new Map(),
       logs: [], // 日志内容
-      logMax: 14
+      logMax: 14,
+
+      // todo: test properties
+      t: 0, // 开始时间
+      interframetime: 1000, // 测试帧数
+      waypoints: null
     };
   },
   computed: {},
@@ -90,31 +132,35 @@ export default {
   },
   created() {},
   mounted() {
-    emitter.on(EventType.INITENV, data => {
-      this.envConfig = data;
-      this.envConfig.circulars.map(o => {
-        o = Object.assign(o, {
-          name: "obstacle",
-          type: true ? "circle" : "rect",
-          r: o.r,
-          w: o.w,
-          h: o.h,
-          position: {
-            x: o.x,
-            y: o.y
-          }
-        });
-        return o;
-      });
+    // emitter.on(EventType.INITENV, data => {
+    //   if (!data) return;
+    //   this.envConfig = data;
+    //   this.envConfig.circulars.map(o => {
+    //     o = Object.assign(o, {
+    //       name: "obstacle",
+    //       type: true ? "circle" : "rect",
+    //       r: o.r,
+    //       w: o.w,
+    //       h: o.h,
+    //       position: {
+    //         x: o.x,
+    //         y: o.y
+    //       }
+    //     });
+    //     return o;
+    //   });
 
-      this.init();
-      this.initMap(data.xsize, data.ysize);
-      console.log("env", data);
-    });
+    //   this.init();
+    //   this.initMap(mapImg, data.xsize * mapScale, data.ysize * mapScale);
+    //   console.log("env", data);
+    // });
     this.init();
-    this.initMap(this.envConfig.xsize, this.envConfig.ysize);
+    this.initMap(mapImg, this.envConfig.xsize, this.envConfig.ysize);
 
     this.syncSocket();
+
+    // todo: test
+    this.animateActions(0, actionRecords);
   },
   destroy() {
     socketMap.close();
@@ -131,23 +177,15 @@ export default {
       createjs.Touch.enable(this.stage);
       createjs.Ticker.setFPS(60);
       createjs.Ticker.addEventListener("tick", this.doTicker);
-
-      // 绘制单位
-      this.unitsConfig.map(params => {
-        this.paintingTarget(params);
-      });
-      // 绘制障碍物
-      this.envConfig.circulars.map(params => {
-        this.paintingObstacle(params);
-      });
     },
 
     // 加载地图
-    initMap(width, height) {
+    initMap(imgfile, width, height) {
       const image = new Image();
-      image.src = require("@/assets/map-campaign.png");
+      image.src = imgfile;
       image.onload = onImageLoad;
       const backgroudContainer = new createjs.Container(); // 绘制外部容器
+
       this.stage.addChild(backgroudContainer);
       function onImageLoad(event) {
         let bitmap = new createjs.Bitmap(event.target);
@@ -161,6 +199,17 @@ export default {
         );
         backgroudContainer.addChild(bitmap);
       }
+
+      // 绘制单位
+      this.unitsConfig.map(params => {
+        this.paintingUnit(params);
+      });
+      // 绘制障碍物
+      this.envConfig.circulars.map(params => {
+        this.paintingObstacle(params);
+      });
+
+      this.bindEvent(backgroudContainer);
     },
 
     // 绘制线条
@@ -192,6 +241,25 @@ export default {
           g.lineTo(x1 + (xpos / numDashes) * i, y1 + (ypos / numDashes) * i);
         }
       }
+    },
+
+    // 绘制路径
+    drawWaypoints(name, paths, color, stroke = 1) {
+      let shape = new createjs.Shape();
+      shape.name = name;
+      shape.graphics.clear();
+      shape.graphics.beginStroke(color).setStrokeStyle(stroke);
+
+      if (Array.isArray(paths))
+        paths.forEach((p, i) => {
+          if (i === 0) {
+            shape.graphics.moveTo(p.x * mapScale, p.y * mapScale);
+          } else {
+            shape.graphics.lineTo(p.x * mapScale, p.y * mapScale);
+          }
+        });
+
+      return shape;
     },
 
     // 绘制圆形
@@ -271,7 +339,7 @@ export default {
     },
 
     // 绘制目标单位
-    paintingTarget(params) {
+    paintingUnit(params) {
       const {
         name,
         viewDistance,
@@ -282,12 +350,13 @@ export default {
         position
       } = params;
 
-      // 绘制外部容器
-      const container = new createjs.Container();
+      // 绘制Unit容器
+      const unitContainer = new createjs.Container();
+      unitContainer.name = name;
       // 添加形状实例到舞台显示列表
-      this.stage.addChild(container);
+      this.stage.addChild(unitContainer);
       // 创建一个形状的显示对象
-      this.units.set(name, container);
+      this.units.set(name, unitContainer);
 
       // 绘制单位
       const circle = this.drawCircle("circle", name, "white", density);
@@ -296,12 +365,6 @@ export default {
       const headTo = this.drawLine("headTo", 10, "black", 2);
       // 修正为正面角度
       headTo.rotation = viewAngle / 2;
-
-      // 绘制攻击线
-      const aimingTo = this.drawLine("aimingTo", 1000, name, 1, true);
-      // 修正为正面角度
-      aimingTo.rotation = viewAngle / 2;
-      aimingTo.alpha = 0;
 
       // 绘制目视扇区
       const viewVector = this.drawSector(
@@ -318,20 +381,18 @@ export default {
       deathMark.alpha = 0;
 
       // 死亡标志加入容器
-      container.addChild(deathMark);
+      unitContainer.addChild(deathMark);
       // 目视扇区加入容器
-      container.addChild(viewVector);
+      unitContainer.addChild(viewVector);
       // 加入容器
-      container.addChild(circle);
+      unitContainer.addChild(circle);
       // 方向指示线加入容器
-      container.addChild(headTo);
-      // 攻击线加入容器
-      container.addChild(aimingTo);
+      unitContainer.addChild(headTo);
 
-      container.alpha = 0;
+      unitContainer.alpha = 0;
 
       // 绑定事件
-      this.bindEvent(container);
+      this.bindEvent(unitContainer);
     },
 
     // 绘制障碍物体
@@ -354,10 +415,63 @@ export default {
       }
     },
 
+    // 触发动作
+    triggerAction(name, unit, data, interval = 100) {
+      setTimeout(() => {
+        this[`action${name}ing`](unit, data);
+      }, interval);
+    },
+
+    // 攻击
+    actionAttacking(unit, { angle, distance } = { angle: 100, distance: 80 }) {
+      // 绘制攻击线
+      const aimingTo = this.drawLine("aimingTo", distance, unit.name, 1, true);
+      // 修正为正面角度
+      aimingTo.rotation = viewAngle / 2;
+      // 攻击线加入容器
+      unit.addChild(aimingTo);
+      setTimeout(() => {
+        unit.removeChild(aimingTo);
+      }, 100);
+    },
+
+    // 外部修改模式
+    changeMode(keyName = "isPlanning", val) {
+      this[keyName] = val !== null ? val : !this[keyName];
+    },
+
     // 绑定事件
     bindEvent(graph) {
-      graph.addEventListener("click", function(e) {
-        console.log("click");
+      graph.addEventListener("click", e => {
+        if (this.isPlanning) {
+          console.log("click", e);
+        } else {
+          console.log("clickMark", e);
+          // 绘制点选圈
+          const mouseMark = this.drawCircle("clickMark", "white", "black", 4);
+          mouseMark.x = e.stageX;
+          mouseMark.y = e.stageY;
+          createjs.Tween.get(mouseMark, {
+            bounce: false,
+            loop: false
+          }).to(
+            {
+              scaleX: 5,
+              scaleY: 5,
+              alpha: 0
+            },
+            1000,
+            createjs.Ease.linear
+          );
+          this.stage.addChild(mouseMark);
+          this.handleSendCommand("controls", {
+            cmd: 100,
+            position: { x: e.stageX, y: e.stageY }
+          });
+          setTimeout(() => {
+            this.stage.removeChild(mouseMark);
+          }, 1000);
+        }
       });
     },
     doTicker(event) {
@@ -375,70 +489,121 @@ export default {
       // 追逐者
       emitter.on(EventType.PURSUER, data => {
         let currentUnit = this.units.get("red");
-        let aimingTo = currentUnit.getChildByName("aimingTo");
-        currentUnit.alpha = 1;
-        // 创建补间动画
-        let tween = createjs.Tween.get(currentUnit, {
-          bounce: false,
-          loop: false
-        }).to(
-          {
-            x: data.x,
-            y: data.y,
-            rotation: data.angle - 180 - viewAngle / 2
-          },
-          250,
-          createjs.Ease.linear
-        );
-        // tween.on("change", function(event) {
-        //   console.log(event);
-        // });
-
-        aimingTo.alpha = data.attacking ? 1 : 0;
-        // this.pushLog({ "RED_INFO：": data });
-        // console.log("RED_INFO：", data);
+        this.actionsProcessing(currentUnit, data);
       });
 
       // 逃亡者
       emitter.on(EventType.ESCAPER, data => {
         let currentUnit = this.units.get("blue");
-        let aimingTo = currentUnit.getChildByName("aimingTo");
-        currentUnit.alpha = 1;
-        // 创建补间动画
-        let tween = createjs.Tween.get(currentUnit, {
-          bounce: false,
-          loop: false
-        }).to(
-          {
-            x: data.x,
-            y: data.y,
-            rotation: data.angle - 180 - 170 / 2
-          },
-          250,
-          createjs.Ease.linear
-        );
-        // tween.on("change", function(event) {
-        //   console.log(event);
-        // });
-
-        aimingTo.alpha = data.attacking ? 1 : 0;
-        // this.pushLog({ "BLUE_INFO：": data });
-        // console.log("BLUE_INFO：", data);
+        this.actionsProcessing(currentUnit, data);
       });
 
-      // action
-      emitter.on(EventType.ACTION, data => {
-        console.log("ACTION_INFO：", data);
+      // 动作action
+      emitter.on(EventType.UNITWEAPON, data => {
+        this.pushLog({ "UNITWEAPON_INFO：": data });
+        // console.log("UNITWEAPON_INFO：", data);
+      });
+
+      // path
+      emitter.on(EventType.PATH, data => {
+        this.stage.removeChild(this.waypoints);
+        this.waypoints = this.drawWaypoints("pathTest", data || [], "yellow");
+        this.stage.addChild(this.waypoints);
+
+        // this.pushLog({ "PATH_INFO：": data });
       });
     },
+
+    // 动作解析
+    actionsProcessing(unit, data) {
+      // if (!this.isStarted) {
+      //   this.isStarted = true;
+      //   return;
+      // }
+      let deathState = unit.getChildByName("deathState");
+      unit.alpha = 1;
+      // 状态处理
+      switch (data.state) {
+        case "DEAD":
+          setTimeout(() => {
+            unit.children.forEach(g => {
+              g.alpha = 0;
+            });
+            deathState.alpha = 1;
+            // 创建补间动画
+            createjs.Tween.get(deathState, {
+              bounce: false,
+              loop: false
+            }).to(
+              {
+                alpha: 0
+              },
+              5000,
+              createjs.Ease.linear
+            );
+          }, TIMEFRAME);
+          break;
+        case "ALIVE":
+          setTimeout(() => {
+            unit.children.forEach(g => {
+              g.alpha = 1;
+            });
+            deathState.alpha = 0;
+          }, TIMEFRAME);
+          break;
+        case "ATTACK":
+          this.triggerAction("Attack", unit, data);
+          break;
+        default:
+      }
+
+      // 创建补间动画
+      let tween = createjs.Tween.get(unit, {
+        bounce: false,
+        loop: false
+      }).to(
+        {
+          x: data.x * mapScale,
+          y: data.y * mapScale,
+          rotation: data.angle - 180 - viewAngle / 2
+        },
+        TIMEFRAME,
+        createjs.Ease.linear
+      );
+      // tween.on("change", function(event) {
+      //   console.log(event);
+      // });
+
+      // this.pushLog({ `${unit.name.toUpperCase()}_INFO：`: data });
+      console.log(`${unit.name.toUpperCase()}_INFO：`, data);
+    },
+    // todo: test动作
+    animateActions(RenderAfter, Actions) {
+      this.t += RenderAfter;
+
+      setTimeout(() => {
+        Actions.forEach(Frame => {
+          this.animateFrame(this.interframetime, Frame);
+        });
+      }, this.t);
+    },
+    // todo: 执行帧动作
+    animateFrame(RenderAfter, Frame) {
+      let currentUnit = this.units.get("yellow");
+      this.t += RenderAfter;
+      setTimeout(() => {
+        this.actionsProcessing(currentUnit, Frame);
+      }, this.t);
+    },
+
     pushLog(info) {
       if (this.logs.length > this.logMax) {
         this.logs = this.logs.splice(-this.logMax + 1);
       }
       this.logs.push(info);
     },
-    handleSendCommand(command) {
-      socketMap.emit(command, {});
+    handleSendCommand(eventName, command) {
+      socketMap.emit(eventName, command);
     }
   }
 };

@@ -15,8 +15,12 @@ const EventType = {
   PURSUER: "pursuer",
   // 躲避方
   ESCAPER: "escaper",
+  // 单位动作
+  UNITWEAPON: "unitWeapon",
   // 动作处理
-  ACTION: "action"
+  CONTROLS: "controls",
+  // todo:
+  PATH: "path"
 };
 
 class EventEmitter {

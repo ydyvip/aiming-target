@@ -1,6 +1,7 @@
 import io from "socket.io-client";
 import { emitter, EventType } from "@/EventEmitter";
 import { getQueryVariable } from "@/utils";
+console.log(process.env);
 const LINK_ADDRESS =
   (GlobalConfig.BaseUrl || process.env.VUE_APP_SOCKET) + "combat";
 const socketMap = io(LINK_ADDRESS);
@@ -8,6 +9,7 @@ const socketMap = io(LINK_ADDRESS);
 const connectorId = getQueryVariable("connectorId");
 
 socketMap.on("connect", () => {
+  // 连接创建后发送
   socketMap.emit("bind", {
     uuid: connectorId
   });
@@ -34,8 +36,16 @@ socketMap.on("pursuer", data => {
   emitter.emit(EventType.PURSUER, data);
 });
 
-socketMap.on("action", data => {
-  emitter.emit(EventType.ACTION, data);
+socketMap.on("unitWeapon", data => {
+  emitter.emit(EventType.UNITWEAPON, data);
+});
+
+socketMap.on("controls", data => {
+  emitter.emit(EventType.CONTROLS, data);
+});
+
+socketMap.on("path", data => {
+  emitter.emit(EventType.PATH, data);
 });
 
 export default socketMap;
