@@ -461,41 +461,46 @@ export default {
     // 绑定事件
     bindEvent(graph) {
       graph.addEventListener("mousedown", e => {
-        console.log(e);
-        if (e.button == 0) {
+        const { nativeEvent } = e;
+        // 绘制点选圈
+        const mouseMark = this.drawCircle("clickMark", "white", "black", 4);
+        mouseMark.x = e.stageX;
+        mouseMark.y = e.stageY;
+        createjs.Tween.get(mouseMark, {
+          bounce: false,
+          loop: false
+        }).to(
+          {
+            scaleX: 5,
+            scaleY: 5,
+            alpha: 0
+          },
+          1000,
+          createjs.Ease.linear
+        );
+        this.stage.addChild(mouseMark);
+        if (nativeEvent.button === 0) {
           // 鼠标左键
           console.log("您点击了鼠标左键!");
-          // 绘制点选圈
-          const mouseMark = this.drawCircle("clickMark", "white", "black", 4);
-          mouseMark.x = e.stageX;
-          mouseMark.y = e.stageY;
-          createjs.Tween.get(mouseMark, {
-            bounce: false,
-            loop: false
-          }).to(
-            {
-              scaleX: 5,
-              scaleY: 5,
-              alpha: 0
-            },
-            1000,
-            createjs.Ease.linear
-          );
-          this.stage.addChild(mouseMark);
           this.handleSendCommand("controls", {
             cmd: 100,
             position: { x: e.stageX, y: e.stageY }
           });
-          setTimeout(() => {
-            this.stage.removeChild(mouseMark);
-          }, 1000);
-        } else if (e.button == 2) {
+        } else if (nativeEvent.button === 2) {
           //鼠标右键
           console.log("您点击了鼠标右键!");
-        } else if (e.button == 1) {
+          this.handleSendCommand("controls", {
+            cmd: 2,
+            id: "pursuer",
+            position: { x: e.stageX, y: e.stageY }
+          });
+        } else if (nativeEvent.button === 1) {
           //鼠标中键
           console.log("您点击了鼠标中键!");
         }
+        setTimeout(() => {
+          this.stage.removeChild(mouseMark);
+        }, 1000);
       });
     },
     doTicker(event) {
@@ -593,8 +598,8 @@ export default {
         loop: false
       }).to(
         {
-          x: data.x * mapScale,
-          y: data.y * mapScale,
+          x: data.x,
+          y: data.y,
           rotation: data.angle - 180 - viewAngle / 2
         },
         TIMEFRAME,
