@@ -5,7 +5,9 @@
         v-show="stage"
         id="tournament"
         style="border:1px solid #e1e1e1;"
+        @contextmenu.prevent
       ></canvas>
+      <p>当前选中单位：{{ selectedUnit }}</p>
       <div class="c-controls">
         <input
           class="btn"
@@ -36,7 +38,20 @@
             })
           "
         />
+        <input
+          class="btn"
+          type="button"
+          value="发送指令"
+          @click="handleSendCommand('controls', currentCmd)"
+        />
+        <input
+          class="btn"
+          type="text"
+          v-model="currentCmd"
+          placeholder="输入{}指令对象"
+        />
       </div>
+
       <ul class="c-logs">
         <li v-for="(log, i) in logs" :key="i">
           {{ log }}
@@ -68,6 +83,7 @@ export default {
       isPlanning: false, // 是否为规划模式
       isStarted: false,
       stage: null,
+      selectedUnit: null, // 选中的unit
       envConfig: {
         circulars: [],
         xsize: 130 * mapScale,
@@ -117,7 +133,8 @@ export default {
 
       // todo: test properties
       t: 0, // 开始时间
-      waypointsLine: null
+      waypointsLine: null,
+      currentCmd: null
     };
   },
   computed: {},
@@ -391,7 +408,9 @@ export default {
       unitContainer.alpha = 0;
 
       // 绑定事件
-      this.bindEvent(unitContainer);
+      unitContainer.addEventListener("click", e => {
+        this.selectedUnit = unitContainer;
+      });
     },
 
     // 绘制障碍物体
@@ -441,11 +460,11 @@ export default {
 
     // 绑定事件
     bindEvent(graph) {
-      graph.addEventListener("click", e => {
-        if (this.isPlanning) {
-          console.log("click", e);
-        } else {
-          console.log("clickMark", e);
+      graph.addEventListener("mousedown", e => {
+        console.log(e);
+        if (e.button == 0) {
+          // 鼠标左键
+          console.log("您点击了鼠标左键!");
           // 绘制点选圈
           const mouseMark = this.drawCircle("clickMark", "white", "black", 4);
           mouseMark.x = e.stageX;
@@ -470,6 +489,12 @@ export default {
           setTimeout(() => {
             this.stage.removeChild(mouseMark);
           }, 1000);
+        } else if (e.button == 2) {
+          //鼠标右键
+          console.log("您点击了鼠标右键!");
+        } else if (e.button == 1) {
+          //鼠标中键
+          console.log("您点击了鼠标中键!");
         }
       });
     },
@@ -608,6 +633,12 @@ export default {
       this.logs.push(info);
     },
     handleSendCommand(eventName, command) {
+      console.log("SEND_CMD：", command);
+      if (typeof command === "string") {
+        let obj = new Function("return " + command)();
+        socketMap.emit(eventName, obj);
+        return;
+      }
       socketMap.emit(eventName, command);
     }
   }
