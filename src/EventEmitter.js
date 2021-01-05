@@ -11,12 +11,12 @@ const EventType = {
   START: "start",
   // 暂停推演
   PAUSE: "pause",
-  // 追击方
-  PURSUER: "pursuer",
-  // 躲避方
-  ESCAPER: "escaper",
-  // 单位动作
-  UNITWEAPON: "unitWeapon",
+  // 单兵态势
+  ACTORSTATE: "actorState",
+  // 范围视野范围内敌人
+  VIEWENEMY: "viewEnemy",
+  // 武器行为
+  WEAPONACTION: "weaponAction",
   // 动作处理
   CONTROLS: "controls",
   // todo:

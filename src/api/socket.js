@@ -27,17 +27,17 @@ socketMap.on("start", data => {
 socketMap.on("pause", data => {
   emitter.emit(EventType.PAUSE, data);
 });
-
-socketMap.on("escaper", data => {
-  emitter.emit(EventType.ESCAPER, data);
+// 单兵态势
+socketMap.on("actorState", data => {
+  emitter.emit(EventType.ACTORSTATE, data);
 });
-
-socketMap.on("pursuer", data => {
-  emitter.emit(EventType.PURSUER, data);
+// 范围视野范围内敌人
+socketMap.on("viewEnemy", data => {
+  emitter.emit(EventType.VIEWENEMY, data);
 });
-
-socketMap.on("unitWeapon", data => {
-  emitter.emit(EventType.UNITWEAPON, data);
+// 武器行为
+socketMap.on("weaponAction", data => {
+  emitter.emit(EventType.WEAPONACTION, data);
 });
 
 socketMap.on("controls", data => {

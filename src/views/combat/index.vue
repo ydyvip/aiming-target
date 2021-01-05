@@ -1,63 +1,70 @@
 <template>
-  <div style="width: 100%; height: 100%; position: relative; overflow-y: auto;">
-    <div id="main">
-      <canvas
-        v-show="stage"
-        id="tournament"
-        style="border:1px solid #e1e1e1;"
-        @contextmenu.prevent
-      ></canvas>
-      <p>当前选中单位：{{ selectedUnit }}</p>
-      <div class="c-controls">
-        <input
-          class="btn"
-          type="button"
-          value="开始对抗"
-          @click="handleSendCommand('start')"
-        />
-        <input
-          class="btn"
-          type="button"
-          value="暂停"
-          @click="handleSendCommand('pause')"
-        />
-        <input
-          class="btn"
-          type="button"
-          value="移动"
-          @click="handleSendCommand('controls', { cmd: 1 })"
-        />
-        <input
-          class="btn"
-          type="button"
-          value="发送坐标"
-          @click="
-            handleSendCommand('controls', {
-              cmd: 2,
-              position: { x: 50, y: 50 }
-            })
-          "
-        />
-        <input
-          class="btn"
-          type="button"
-          value="发送指令"
-          @click="handleSendCommand('controls', currentCmd)"
-        />
-        <input
-          class="btn"
-          type="text"
-          v-model="currentCmd"
-          placeholder="输入{}指令对象"
-        />
-      </div>
-
-      <ul class="c-logs">
-        <li v-for="(log, i) in logs" :key="i">
-          {{ log }}
-        </li>
-      </ul>
+  <div
+    ref="canvasWrap"
+    id="canvasWrap"
+    style="position: relative; overflow-y: auto;"
+  >
+    <canvas
+      v-show="stage"
+      id="canvasStage"
+      style="border:1px solid #e1e1e1;"
+      @contextmenu.prevent
+    ></canvas>
+    <p>当前选中单位：{{ selectedUnit }}</p>
+    <div class="c-controls">
+      <input
+        class="btn"
+        type="button"
+        value="开始对抗"
+        @click="handleSendCommand('start')"
+      />
+      <input
+        class="btn"
+        type="button"
+        value="暂停"
+        @click="handleSendCommand('pause')"
+      />
+      <input
+        class="btn"
+        type="text"
+        v-model="currentCmd"
+        placeholder="输入{}指令对象"
+      />
+      <input
+        class="btn"
+        type="button"
+        value="发送指令"
+        @click="handleSendCommand('controls', currentCmd)"
+      />
+      <input
+        class="btn"
+        type="button"
+        :value="'武器切换为' + weaponOptions[selectedUnit.weapon]"
+        @click="
+          handleSendCommand('controls', {
+            id: 'pursuer',
+            cmd: 'c2s_switch_weapon'
+          })
+        "
+      />
+      <input
+        class="btn"
+        type="button"
+        value="填充弹药"
+        @click="
+          handleSendCommand('controls', {
+            id: 'pursuer',
+            cmd: 'c2s_load_ammunition'
+          })
+        "
+      />
     </div>
+
+    <ul class="c-logs">
+      <li v-for="(log, i) in logs" :key="i">
+        {{ log }}
+      </li>
+    </ul>
   </div>
 </template>
 
@@ -72,9 +79,16 @@ const viewDistance = 50; // 视线距离
 const viewAngle = 124; // 视线夹角
 
 const mapImg = require("@/assets/map-campaign-1.png"); // 地图背景
-const mapScale = 10; // 放大倍
+let mapScale = 10; // 放大倍
 
-const TIMEFRAME = 1000; // 帧数
+const TIMEFRAME = 500; // 帧数
+const WEAPONINDEX = {
+  0: "空手",
+  1: "刀",
+  2: "手枪",
+  3: "步枪",
+  4: "狙击枪"
+};
 
 export default {
   name: "Combat",
@@ -83,12 +97,17 @@ export default {
       isPlanning: false, // 是否为规划模式
       isStarted: false,
       stage: null,
-      selectedUnit: null, // 选中的unit
+      selectedUnit: {
+        name: null,
+        weapon: 0
+      }, // 选中的unit
       envConfig: {
         circulars: [],
         xsize: 130 * mapScale,
         ysize: 100 * mapScale
       },
+      // 武器类型
+      weaponOptions: WEAPONINDEX,
       unitsConfig: [
         {
           name: "red",
@@ -97,6 +116,7 @@ export default {
           viewAngle, // 视线夹角
           viewRotation: 0,
           density: 4,
+          weapon: 0,
           position: {
             x: 0,
             y: 0
@@ -109,6 +129,7 @@ export default {
           viewAngle,
           viewRotation: 0,
           density: 4,
+          weapon: 0,
           position: {
             x: 0,
             y: 0
@@ -121,6 +142,7 @@ export default {
           viewAngle,
           viewRotation: 0,
           density: 4,
+          weapon: 0,
           position: {
             x: 0,
             y: 500
@@ -148,32 +170,23 @@ export default {
   },
   created() {},
   mounted() {
-    // emitter.on(EventType.INITENV, data => {
-    //   if (!data) return;
-    //   this.envConfig = data;
-    //   this.envConfig.circulars.map(o => {
-    //     o = Object.assign(o, {
-    //       name: "obstacle",
-    //       type: true ? "circle" : "rect",
-    //       r: o.r,
-    //       w: o.w,
-    //       h: o.h,
-    //       position: {
-    //         x: o.x,
-    //         y: o.y
-    //       }
-    //     });
-    //     return o;
-    //   });
-
-    //   this.init();
-    //   this.initMap(mapImg, data.xsize * mapScale, data.ysize * mapScale);
-    //   console.log("env", data);
-    // });
-    this.init();
-    this.initMap(mapImg, this.envConfig.xsize, this.envConfig.ysize);
+    const { xsize, ysize } = this.resizeToFit("canvasWrap");
+    this.init(xsize, ysize);
+    this.initMap(mapImg, xsize, ysize);
 
     this.syncSocket();
+
+    window.onresize = () => {
+      console.log("resize");
+      const { xsize, ysize, scale } = this.resizeToFit("canvasWrap");
+
+      // scale the canvas to fit the window
+      this.stage.canvas.width = xsize;
+      this.stage.canvas.height = ysize;
+      // scale the stage drawings to fill the canvas
+      this.stage.scaleX = scale;
+      this.stage.scaleY = scale;
+    };
 
     // todo: test
     // this.animateActions(0, actionRecords);
@@ -183,13 +196,13 @@ export default {
   },
   methods: {
     // 初始化
-    init() {
-      let tournament = document.getElementById("tournament");
-      tournament.width = this.envConfig.xsize;
-      tournament.height = this.envConfig.ysize;
+    init(width, height) {
+      const canvasStage = document.getElementById("canvasStage");
+      canvasStage.width = width;
+      canvasStage.height = height;
 
       // 创建一个舞台，得到一个参考的画布
-      this.stage = new createjs.Stage(tournament);
+      this.stage = new createjs.Stage(canvasStage);
       createjs.Touch.enable(this.stage);
       createjs.Ticker.setFPS(60);
       createjs.Ticker.addEventListener("tick", this.doTicker);
@@ -221,11 +234,31 @@ export default {
         this.paintingUnit(params);
       });
       // 绘制障碍物
-      this.envConfig.circulars.map(params => {
-        this.paintingObstacle(params);
-      });
+      // this.envConfig.circulars.map(params => {
+      //   this.paintingObstacle(params);
+      // });
 
       this.bindEvent(backgroudContainer);
+    },
+
+    // resize
+    resizeToFit(wrapName, ratio) {
+      const { clientWidth, clientHeight } = this.$refs[wrapName] || {};
+      const { xsize, ysize } = this.envConfig;
+
+      // determine the screen scale factor
+      let scaleX = clientWidth / xsize;
+      let scaleY = clientHeight / ysize;
+      if (scaleX <= 1) {
+        mapScale = mapScale * scaleX;
+        return { xsize: xsize * scaleX, ysize: ysize * scaleX, scale: scaleX };
+      }
+      // use the lesser scale to fit the entire canvas on screen
+      // let scale = Math.min(scaleX, scaleY);
+      else {
+        mapScale = mapScale * 1;
+        return { xsize: xsize * 1, ysize: ysize * 1, scale: 1 };
+      }
     },
 
     // 绘制线条
@@ -369,6 +402,8 @@ export default {
       // 绘制Unit容器
       const unitContainer = new createjs.Container();
       unitContainer.name = name;
+      // 挂载空手武器
+      unitContainer.weapon = 0;
       // 添加形状实例到舞台显示列表
       this.stage.addChild(unitContainer);
       // 创建一个形状的显示对象
@@ -405,7 +440,8 @@ export default {
       // 方向指示线加入容器
       unitContainer.addChild(headTo);
 
-      unitContainer.alpha = 0;
+      // 初始化是否不显示
+      // unitContainer.alpha = 0;
 
       // 绑定事件
       unitContainer.addEventListener("click", e => {
@@ -460,48 +496,54 @@ export default {
 
     // 绑定事件
     bindEvent(graph) {
-      graph.addEventListener("mousedown", e => {
-        const { nativeEvent } = e;
-        // 绘制点选圈
-        const mouseMark = this.drawCircle("clickMark", "white", "black", 4);
-        mouseMark.x = e.stageX;
-        mouseMark.y = e.stageY;
-        createjs.Tween.get(mouseMark, {
-          bounce: false,
-          loop: false
-        }).to(
-          {
-            scaleX: 5,
-            scaleY: 5,
-            alpha: 0
-          },
-          1000,
-          createjs.Ease.linear
-        );
-        this.stage.addChild(mouseMark);
-        if (nativeEvent.button === 0) {
-          // 鼠标左键
-          console.log("您点击了鼠标左键!");
-          this.handleSendCommand("controls", {
-            cmd: 100,
-            position: { x: e.stageX, y: e.stageY }
-          });
-        } else if (nativeEvent.button === 2) {
-          //鼠标右键
-          console.log("您点击了鼠标右键!");
-          this.handleSendCommand("controls", {
-            cmd: 2,
-            id: "pursuer",
-            position: { x: e.stageX, y: e.stageY }
-          });
-        } else if (nativeEvent.button === 1) {
-          //鼠标中键
-          console.log("您点击了鼠标中键!");
-        }
-        setTimeout(() => {
-          this.stage.removeChild(mouseMark);
-        }, 1000);
-      });
+      graph.addEventListener(
+        "mousedown",
+        event => {
+          const { nativeEvent, stageX, stageY } = event;
+          // don't let it bubble.
+          nativeEvent.preventDefault();
+          // 绘制点选圈
+          const mouseMark = this.drawCircle("clickMark", "white", "black", 4);
+          mouseMark.x = stageX;
+          mouseMark.y = stageY;
+          createjs.Tween.get(mouseMark, {
+            loop: false
+          }).to(
+            {
+              scaleX: 5,
+              scaleY: 5,
+              alpha: 0
+            },
+            1000,
+            createjs.Ease.linear
+          );
+          this.stage.addChild(mouseMark);
+          // createjs 同时支持touchstart事件
+          if (nativeEvent.button === 0 || nativeEvent.type === "touchstart") {
+            // 鼠标左键
+            this.handleSendCommand("controls", {
+              id: this.selectedUnit.name === "red" ? "pursuer" : "escaper",
+              cmd: "c2s_attack"
+            });
+          } else if (nativeEvent.button === 2) {
+            //鼠标右键
+            this.handleSendCommand("controls", {
+              id: this.selectedUnit.name === "red" ? "pursuer" : "escaper",
+              cmd: "c2s_move",
+              position: {
+                x: stageX / mapScale,
+                y: stageY / mapScale
+              }
+            });
+          } else if (nativeEvent.button === 1) {
+            //鼠标中键
+          }
+          setTimeout(() => {
+            this.stage.removeChild(mouseMark);
+          }, 1000);
+        },
+        false
+      );
     },
     doTicker(event) {
       // 更新舞台将呈现下一帧
@@ -515,22 +557,25 @@ export default {
       this.stage.update();
     },
     syncSocket() {
-      // 追逐者
-      emitter.on(EventType.PURSUER, data => {
-        let currentUnit = this.units.get("red");
+      // 单兵态势
+      emitter.on(EventType.ACTORSTATE, data => {
+        this.pushLog({ "ACTORSTATE_INFO：": data });
+        let currentUnit = this.units.get(this.selectedUnit.name || "red");
         this.actionsProcessing(currentUnit, data);
       });
 
-      // 逃亡者
-      emitter.on(EventType.ESCAPER, data => {
-        let currentUnit = this.units.get("blue");
+      // 范围视野范围内敌人
+      emitter.on(EventType.VIEWENEMY, data => {
+        this.pushLog({ "VIEWENEMY_INFO：": data });
+        let currentUnit = this.units.get(this.selectedUnit.name || "red");
         this.actionsProcessing(currentUnit, data);
       });
 
-      // 动作action
-      emitter.on(EventType.UNITWEAPON, data => {
-        this.pushLog({ "UNITWEAPON_INFO：": data });
-        // console.log("UNITWEAPON_INFO：", data);
+      // 武器行为
+      emitter.on(EventType.WEAPONACTION, data => {
+        this.pushLog({ "WEAPONACTION_INFO：": data });
+        let currentUnit = this.units.get(this.selectedUnit.name || "red");
+        this.actionsProcessing(currentUnit, data);
       });
 
       // path
@@ -557,6 +602,11 @@ export default {
       // }
       let deathState = unit.getChildByName("deathState");
       unit.alpha = 1;
+
+      // 记录时间戳计算帧数
+      const TIMEFRAME = data.timestamp - unit.timestamp || 0;
+      unit.timestamp = data.timestamp;
+
       // 状态处理
       switch (data.state) {
         case "DEAD":
@@ -567,7 +617,6 @@ export default {
             deathState.alpha = 1;
             // 创建补间动画
             createjs.Tween.get(deathState, {
-              bounce: false,
               loop: false
             }).to(
               {
@@ -594,13 +643,13 @@ export default {
 
       // 创建补间动画
       let tween = createjs.Tween.get(unit, {
-        bounce: false,
-        loop: false
+        loop: false,
+        override: true
       }).to(
         {
-          x: data.x,
-          y: data.y,
-          rotation: data.angle - 180 - viewAngle / 2
+          x: data.x * mapScale,
+          y: data.y * mapScale,
+          rotation: data.angle + 180 - viewAngle / 2
         },
         TIMEFRAME,
         createjs.Ease.linear
@@ -638,11 +687,20 @@ export default {
       this.logs.push(info);
     },
     handleSendCommand(eventName, command) {
-      console.log("SEND_CMD：", command);
       if (typeof command === "string") {
-        let obj = new Function("return " + command)();
-        socketMap.emit(eventName, obj);
-        return;
+        let command = new Function("return " + command)();
+      }
+      console.log("SEND_CMD：", command);
+      // 按指令类型处理
+      if (command && command.cmd) {
+        switch (command.cmd) {
+          case "c2s_switch_weapon":
+            this.selectedUnit.weapon =
+              ((this.selectedUnit.weapon || 0) + 1) %
+              Object.keys(WEAPONINDEX).length;
+            command.weapon_index = this.selectedUnit.weapon;
+            break;
+        }
       }
       socketMap.emit(eventName, command);
     }
