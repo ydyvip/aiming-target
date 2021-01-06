@@ -138,7 +138,7 @@ export default {
           visualDistance, // 视线距离
           visualColor: "0xff0000",
           visualAngle, // 视线夹角
-          visualRotation: 0,
+          visualRotation: -visualAngle / 2,
           density: 4,
           weaponIndex: 0,
           status: "c2s_carry",
@@ -154,7 +154,7 @@ export default {
           visualDistance,
           visualColor: "0x0000ff",
           visualAngle,
-          visualRotation: 0,
+          visualRotation: -visualAngle / 2,
           density: 4,
           weaponIndex: 0,
           status: "c2s_carry",
@@ -170,7 +170,7 @@ export default {
           visualDistance,
           visualColor: "0xffff00",
           visualAngle,
-          visualRotation: 0,
+          visualRotation: -visualAngle / 2,
           density: 4,
           weaponIndex: 0,
           status: "c2s_carry",
@@ -186,7 +186,7 @@ export default {
           visualDistance,
           visualColor: "0x00ffff",
           visualAngle,
-          visualRotation: 0,
+          visualRotation: -visualAngle / 2,
           density: 4,
           weaponIndex: 0,
           status: "c2s_carry",
@@ -228,11 +228,11 @@ export default {
       const { xsize, ysize, scale } = this.resizeToFit("canvasWrap");
 
       // scale the canvas to fit the window
-      this.stage.canvas.width = xsize;
-      this.stage.canvas.height = ysize;
+      // this.stage.canvas.width = xsize;
+      // this.stage.canvas.height = ysize;
       // scale the stage drawings to fill the canvas
-      this.stage.scaleX = scale;
-      this.stage.scaleY = scale;
+      // this.stage.scaleX = scale;
+      // this.stage.scaleY = scale;
     };
 
     // todo: test
@@ -253,6 +253,7 @@ export default {
       createjs.Touch.enable(this.stage);
       createjs.Ticker.setFPS(60);
       createjs.Ticker.addEventListener("tick", this.doTicker);
+      // createjs.Ticker.paused = true;
     },
 
     // 加载地图
@@ -473,8 +474,6 @@ export default {
 
       // 绘制方向指示线
       const headTo = this.drawLine("headTo", 10, "black", 2);
-      // 修正为正面角度
-      headTo.rotation = visualAngle / 2;
 
       // 绘制目视扇区
       const visualVector = this.drawSector(
@@ -490,13 +489,13 @@ export default {
       const deathMark = this.drawDeathState("deathState", 6, "0x919191");
       deathMark.alpha = 0;
 
-      // 死亡标志加入容器
+      // 死亡标志加入容器 0
       unitContainer.addChild(deathMark);
-      // 目视扇区加入容器
+      // 目视扇区加入容器 1
       unitContainer.addChild(visualVector);
-      // 加入容器
+      // 加入容器 2
       unitContainer.addChild(circle);
-      // 方向指示线加入容器
+      // 方向指示线加入容器 3
       unitContainer.addChild(headTo);
 
       // 初始化是否不显示
@@ -549,13 +548,12 @@ export default {
       // 绘制攻击线
       const aimingTo = this.drawLine(
         "aimingTo",
-        attackDistance,
+        attackDistance / mapScale,
         unit.visualColor,
         1,
         true
       );
-      // 修正为正面角度
-      aimingTo.rotation = unit.visualAngle / 2;
+
       // 攻击线加入容器
       unit.addChild(aimingTo);
       setTimeout(() => {
@@ -641,8 +639,8 @@ export default {
       // 范围视野范围内敌人
       emitter.on(EventType.VIEWENEMY, data => {
         this.pushLog({ "VIEWENEMY_INFO：": data });
-        let currentUnit = this.units.get(data.id);
-        this.actionsProcessing(currentUnit, data);
+        // let currentUnit = this.units.get(data.id);
+        // this.actionsProcessing(currentUnit, data);
       });
 
       // 武器行为
@@ -657,65 +655,68 @@ export default {
     actionsProcessing(unit, data) {
       let deathState = unit.getChildByName("deathState");
       let visualVector = unit.getChildByName("visualVector");
-      const { visualAngle } = data || {};
+      const { visualAngle, rotation, timestamp, hp } = data || {};
+
+      // 记录时间戳计算帧数
+      const TIMEFRAME = timestamp - unit.timestamp || 0;
+      unit.timestamp = timestamp;
       unit.alpha = 1;
 
       // 重绘制视野
       if (visualAngle !== unit.visualAngle) {
-        visualVector = null;
-        visualVector = this.drawSector(
+        unit.removeChild(visualVector);
+        const newVisualVector = this.drawSector(
           "visualVector",
           0,
           0,
           unit.visualDistance,
           visualAngle,
-          unit.visualRotation,
+          -visualAngle / 2,
           unit.visualColor
         );
+        unit.addChildAt(newVisualVector, 1);
         unit.visualAngle = visualAngle;
       }
 
-      // 状态处理
-      switch (data.state) {
-        case "DEAD":
-          setTimeout(() => {
-            unit.children.forEach(g => {
-              g.alpha = 0;
-            });
-            deathState.alpha = 1;
-            // 创建补间动画
-            createjs.Tween.get(deathState, {
-              loop: false
-            }).to(
-              {
-                alpha: 0
-              },
-              5000,
-              createjs.Ease.linear
-            );
-          }, TIMEFRAME);
-          break;
-        case "ALIVE":
-          setTimeout(() => {
-            unit.children.forEach(g => {
-              g.alpha = 1;
-            });
-            deathState.alpha = 0;
-          }, TIMEFRAME);
-          break;
-        default:
+      // HP状态处理
+      if (hp <= 0) {
+        // 阵亡
+        setTimeout(() => {
+          unit.children.forEach(g => {
+            g.alpha = 0;
+          });
+          deathState.alpha = 1;
+          // 创建补间动画
+          createjs.Tween.get(deathState, {
+            loop: false
+          }).to(
+            {
+              alpha: 0
+            },
+            5000,
+            createjs.Ease.linear
+          );
+        }, TIMEFRAME);
+      } else {
+        // 复活
+        // setTimeout(() => {
+        //   unit.children.forEach(g => {
+        //     g.alpha = 1;
+        //   });
+        //   deathState.alpha = 0;
+        // }, TIMEFRAME);
       }
 
       // cmdProcessor 指令解析
-      this.cmdProcessor(unit, data);
+      this.cmdProcessor(unit, data, TIMEFRAME);
 
       // this.pushLog({ `${unit.name.toUpperCase()}_INFO：`: data });
       console.log(`${unit.name.toUpperCase()}_INFO：`, data);
     },
 
     // cmdProcessor
-    cmdProcessor(unit, data) {
-      const { id, cmd, timestamp, x, y, rotation } = data || {};
+    cmdProcessor(unit, data, TIMEFRAME) {
+      const { id, cmd, x, y, rotation } = data || {};
       // 创建补间对象
       const tween = createjs.Tween.get(unit, {
         loop: false,
@@ -725,9 +726,6 @@ export default {
       //   console.log(event);
       // });
 
-      // 记录时间戳计算帧数
-      const TIMEFRAME = timestamp - unit.timestamp || 0;
-      unit.timestamp = timestamp;
       if (cmd) {
         switch (cmd) {
           case "s2c_move_start":
@@ -737,7 +735,7 @@ export default {
               {
                 x: x * mapScale,
                 y: y * mapScale,
-                rotation: rotation + 180 - visualAngle / 2
+                rotation: rotation + 180
               },
               TIMEFRAME,
               createjs.Ease.linear
