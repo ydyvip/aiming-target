@@ -11,16 +11,18 @@ const EventType = {
   START: "start",
   // 暂停推演
   PAUSE: "pause",
+  // 创建房间
+  CREATE: "create",
+  // 加入房间
+  JOIN: "join",
   // 单兵态势
   ACTORSTATE: "actorState",
   // 范围视野范围内敌人
   VIEWENEMY: "viewEnemy",
   // 武器行为
   WEAPONACTION: "weaponAction",
-  // 动作处理
-  CONTROLS: "controls",
-  // todo:
-  PATH: "path"
+  // C2S控制
+  CONTROLS: "controls"
 };
 
 class EventEmitter {

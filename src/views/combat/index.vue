@@ -15,15 +15,16 @@
       <input
         class="btn"
         type="button"
-        value="开始对抗"
-        @click="handleSendCommand('start')"
+        value="创建房间"
+        @click="handleSendCommand('create')"
       />
       <input
         class="btn"
         type="button"
-        value="暂停"
-        @click="handleSendCommand('pause')"
+        :value="isStarted ? '暂停对抗' : '开始对抗'"
+        @click="handleSendCommand(isStarted ? 'pause' : 'start')"
       />
+
       <input
         class="btn"
         type="text"
@@ -39,11 +40,22 @@
       <input
         class="btn"
         type="button"
-        :value="'武器切换为' + weaponOptions[selectedUnit.weapon]"
+        :value="'武器切换为' + weaponOptions[selectedUnit.weaponIndex]"
         @click="
           handleSendCommand('controls', {
-            id: 'pursuer',
+            id: selectedUnit.unitId,
             cmd: 'c2s_switch_weapon'
+          })
+        "
+      />
+      <input
+        class="btn"
+        type="button"
+        :value="'状态切换为' + statusOptions[selectedUnit.status]"
+        @click="
+          handleSendCommand('controls', {
+            id: selectedUnit.unitId,
+            cmd: selectedUnit.status
           })
         "
       />
@@ -53,7 +65,7 @@
         value="填充弹药"
         @click="
           handleSendCommand('controls', {
-            id: 'pursuer',
+            id: selectedUnit.unitId,
             cmd: 'c2s_load_ammunition'
           })
         "
@@ -73,12 +85,13 @@ import { cloneDeep } from "lodash";
 import createjs from "createjs-npm";
 import socketMap from "@/api/socket";
 import { EventType, emitter } from "@/EventEmitter";
+import { assumptionData } from "./assumption";
 import { actionRecords } from "./records";
 
-const viewDistance = 50; // 视线距离
-const viewAngle = 124; // 视线夹角
+const visualDistance = 40; // 视线距离
+const visualAngle = 124; // 视线夹角
 
-const mapImg = require("@/assets/map-campaign-1.png"); // 地图背景
+const mapImg = require("@/assets/map-campaign-2.png"); // 地图背景
 let mapScale = 10; // 放大倍
 
 const TIMEFRAME = 500; // 帧数
@@ -89,18 +102,25 @@ const WEAPONINDEX = {
   3: "步枪",
   4: "狙击枪"
 };
+const STATUSINDEX = {
+  c2s_aim: "瞄准",
+  c2s_carry: "手持"
+};
 
 export default {
   name: "Combat",
   data() {
     return {
       isPlanning: false, // 是否为规划模式
-      isStarted: false,
+      isStarted: false, // 是否开始对抗
       stage: null,
+      // 选中的unit
       selectedUnit: {
         name: null,
-        weapon: 0
-      }, // 选中的unit
+        weaponIndex: 0,
+        status: "c2s_carry"
+      },
+      // 地图信息
       envConfig: {
         circulars: [],
         xsize: 130 * mapScale,
@@ -108,50 +128,77 @@ export default {
       },
       // 武器类型
       weaponOptions: WEAPONINDEX,
+      // 状态类型
+      statusOptions: STATUSINDEX,
       unitsConfig: [
         {
-          name: "red",
-          viewDistance, // 视线距离
-          viewColor: "0xff0000",
-          viewAngle, // 视线夹角
-          viewRotation: 0,
+          unitId: "10001",
+          unitName: "张小北",
+          group: "reds",
+          visualDistance, // 视线距离
+          visualColor: "0xff0000",
+          visualAngle, // 视线夹角
+          visualRotation: 0,
           density: 4,
-          weapon: 0,
+          weaponIndex: 0,
+          status: "c2s_carry",
           position: {
-            x: 0,
-            y: 0
+            x: 4,
+            y: 2
           }
         },
         {
-          name: "blue",
-          viewDistance,
-          viewColor: "0x0000ff",
-          viewAngle,
-          viewRotation: 0,
+          unitId: "10002",
+          unitName: "王建国",
+          group: "reds",
+          visualDistance,
+          visualColor: "0x0000ff",
+          visualAngle,
+          visualRotation: 0,
           density: 4,
-          weapon: 0,
+          weaponIndex: 0,
+          status: "c2s_carry",
           position: {
-            x: 0,
-            y: 0
+            x: 2,
+            y: 4
           }
         },
         {
-          name: "yellow",
-          viewDistance,
-          viewColor: "0xffff00",
-          viewAngle,
-          viewRotation: 0,
+          unitId: "10003",
+          unitName: "林绪",
+          group: "blues",
+          visualDistance,
+          visualColor: "0xffff00",
+          visualAngle,
+          visualRotation: 0,
           density: 4,
-          weapon: 0,
+          weaponIndex: 0,
+          status: "c2s_carry",
           position: {
-            x: 0,
-            y: 500
+            x: 125,
+            y: 95
+          }
+        },
+        {
+          unitId: "10004",
+          unitName: "郑成功",
+          group: "blues",
+          visualDistance,
+          visualColor: "0x00ffff",
+          visualAngle,
+          visualRotation: 0,
+          density: 4,
+          weaponIndex: 0,
+          status: "c2s_carry",
+          position: {
+            x: 122,
+            y: 92
           }
         }
       ],
       units: new Map(),
       logs: [], // 日志内容
-      logMax: 14,
+      logMax: 8,
 
       // todo: test properties
       t: 0, // 开始时间
@@ -229,10 +276,6 @@ export default {
         backgroudContainer.addChild(bitmap);
       }
 
-      // 绘制单位
-      this.unitsConfig.map(params => {
-        this.paintingUnit(params);
-      });
       // 绘制障碍物
       // this.envConfig.circulars.map(params => {
       //   this.paintingObstacle(params);
@@ -266,7 +309,9 @@ export default {
       let shape = new createjs.Shape();
       shape.name = name;
       shape.graphics.clear();
-      shape.graphics.beginStroke(color).setStrokeStyle(stroke);
+      shape.graphics
+        .beginStroke(createjs.Graphics.getRGB(color))
+        .setStrokeStyle(stroke);
       if (isDash) {
         this.drawDashLine(shape.graphics, 0, 0, length, 0, 5);
       } else {
@@ -297,7 +342,9 @@ export default {
       let shape = new createjs.Shape();
       shape.name = name;
       shape.graphics.clear();
-      shape.graphics.beginStroke(color).setStrokeStyle(stroke);
+      shape.graphics
+        .beginStroke(createjs.Graphics.getRGB(color))
+        .setStrokeStyle(stroke);
 
       if (Array.isArray(paths))
         paths.forEach((p, i) => {
@@ -317,7 +364,7 @@ export default {
       shape.name = name;
       shape.graphics
         .beginFill(fillColor)
-        .beginStroke(color)
+        .beginStroke(createjs.Graphics.getRGB(color))
         .drawCircle(0, 0, density);
       return shape;
     },
@@ -328,7 +375,7 @@ export default {
       shape.name = name;
       shape.graphics
         .beginFill(fillColor)
-        .beginStroke(color)
+        .beginStroke(createjs.Graphics.getRGB(color))
         .drawRect(0, 0, width, height);
       return shape;
     },
@@ -349,7 +396,7 @@ export default {
         0,
         0,
         0,
-        viewDistance
+        visualDistance
       );
       shape.graphics.moveTo(x, y);
 
@@ -377,7 +424,7 @@ export default {
       shape.name = name;
       shape.graphics.clear();
       shape.graphics.setStrokeStyle(stroke);
-      shape.graphics.beginStroke(color);
+      shape.graphics.beginStroke(createjs.Graphics.getRGB(color));
       shape.graphics
         .moveTo(size, size)
         .lineTo(-size, -size)
@@ -390,51 +437,63 @@ export default {
     // 绘制目标单位
     paintingUnit(params) {
       const {
-        name,
-        viewDistance,
-        viewColor,
-        viewAngle,
-        viewRotation,
+        unitId,
+        unitName,
+        visualDistance,
+        visualColor,
+        visualAngle,
+        visualRotation,
         density,
+        weaponIndex,
+        status,
         position
       } = params;
 
       // 绘制Unit容器
       const unitContainer = new createjs.Container();
-      unitContainer.name = name;
+      unitContainer.name = unitId;
+      unitContainer.unitId = unitId;
+      unitContainer.unitName = unitName;
+      unitContainer.visualDistance = visualDistance;
+      unitContainer.visualColor = visualColor;
+      unitContainer.visualAngle = visualAngle;
+      unitContainer.visualRotation = visualRotation;
       // 挂载空手武器
-      unitContainer.weapon = 0;
+      unitContainer.weaponIndex = weaponIndex;
+      // 当前持枪状态
+      unitContainer.status = status;
+
       // 添加形状实例到舞台显示列表
       this.stage.addChild(unitContainer);
       // 创建一个形状的显示对象
-      this.units.set(name, unitContainer);
+      this.units.set(unitId, unitContainer);
 
       // 绘制单位
-      const circle = this.drawCircle("circle", name, "white", density);
+      const circle = this.drawCircle("circle", unitId, "white", density);
 
       // 绘制方向指示线
       const headTo = this.drawLine("headTo", 10, "black", 2);
       // 修正为正面角度
-      headTo.rotation = viewAngle / 2;
+      headTo.rotation = visualAngle / 2;
 
       // 绘制目视扇区
-      const viewVector = this.drawSector(
-        "viewVector",
+      const visualVector = this.drawSector(
+        "visualVector",
         circle.x,
         circle.y,
-        viewDistance,
-        viewAngle,
-        viewRotation,
-        viewColor
+        visualDistance,
+        visualAngle,
+        visualRotation,
+        visualColor
       );
       // 绘制死亡标志
-      const deathMark = this.drawDeathState("deathState", 6, "#919191");
+      const deathMark = this.drawDeathState("deathState", 6, "0x919191");
       deathMark.alpha = 0;
 
       // 死亡标志加入容器
       unitContainer.addChild(deathMark);
       // 目视扇区加入容器
-      unitContainer.addChild(viewVector);
+      unitContainer.addChild(visualVector);
       // 加入容器
       unitContainer.addChild(circle);
       // 方向指示线加入容器
@@ -442,6 +501,9 @@ export default {
 
       // 初始化是否不显示
       // unitContainer.alpha = 0;
+
+      unitContainer.x = position.x * mapScale;
+      unitContainer.y = position.y * mapScale;
 
       // 绑定事件
       unitContainer.addEventListener("click", e => {
@@ -455,13 +517,13 @@ export default {
       let obstacle;
       switch (type) {
         case "circle":
-          obstacle = this.drawCircle(name, "black", "#e1e1e1", r);
+          obstacle = this.drawCircle(name, "black", "0xe1e1e1", r);
           obstacle.x = position.x;
           obstacle.y = position.y;
           this.stage.addChild(obstacle);
           break;
         case "rect":
-          obstacle = this.drawRect(name, "black", "#e1e1e1", w, h);
+          obstacle = this.drawRect(name, "black", "0xe1e1e1", w, h);
           obstacle.x = position.x;
           obstacle.y = position.y;
           this.stage.addChild(obstacle);
@@ -470,18 +532,30 @@ export default {
     },
 
     // 触发动作
-    triggerAction(name, unit, data, interval = 100) {
+    triggerAction(name, unit, data, interval = 0) {
       setTimeout(() => {
         this[`action${name}ing`](unit, data);
       }, interval);
     },
 
     // 攻击
-    actionAttacking(unit, { angle, distance } = { angle: 100, distance: 80 }) {
+    actionAttacking(
+      unit,
+      { attackRotation, attackDistance } = {
+        attackRotation: 100,
+        attackDistance: 80
+      }
+    ) {
       // 绘制攻击线
-      const aimingTo = this.drawLine("aimingTo", distance, unit.name, 1, true);
+      const aimingTo = this.drawLine(
+        "aimingTo",
+        attackDistance,
+        unit.visualColor,
+        1,
+        true
+      );
       // 修正为正面角度
-      aimingTo.rotation = viewAngle / 2;
+      aimingTo.rotation = unit.visualAngle / 2;
       // 攻击线加入容器
       unit.addChild(aimingTo);
       setTimeout(() => {
@@ -522,13 +596,13 @@ export default {
           if (nativeEvent.button === 0 || nativeEvent.type === "touchstart") {
             // 鼠标左键
             this.handleSendCommand("controls", {
-              id: this.selectedUnit.name === "red" ? "pursuer" : "escaper",
+              id: this.selectedUnit.unitId,
               cmd: "c2s_attack"
             });
           } else if (nativeEvent.button === 2) {
             //鼠标右键
             this.handleSendCommand("controls", {
-              id: this.selectedUnit.name === "red" ? "pursuer" : "escaper",
+              id: this.selectedUnit.unitId,
               cmd: "c2s_move",
               position: {
                 x: stageX / mapScale,
@@ -549,8 +623,8 @@ export default {
       // 更新舞台将呈现下一帧
       if (!event.paused) {
         // 当这个Ticker不是paused时保持活跃
+        this.render();
       }
-      this.render();
     },
     render() {
       // 更新舞台将呈现下一帧
@@ -560,52 +634,46 @@ export default {
       // 单兵态势
       emitter.on(EventType.ACTORSTATE, data => {
         this.pushLog({ "ACTORSTATE_INFO：": data });
-        let currentUnit = this.units.get(this.selectedUnit.name || "red");
+        let currentUnit = this.units.get(data.id);
         this.actionsProcessing(currentUnit, data);
       });
 
       // 范围视野范围内敌人
       emitter.on(EventType.VIEWENEMY, data => {
         this.pushLog({ "VIEWENEMY_INFO：": data });
-        let currentUnit = this.units.get(this.selectedUnit.name || "red");
+        let currentUnit = this.units.get(data.id);
         this.actionsProcessing(currentUnit, data);
       });
 
       // 武器行为
       emitter.on(EventType.WEAPONACTION, data => {
         this.pushLog({ "WEAPONACTION_INFO：": data });
-        let currentUnit = this.units.get(this.selectedUnit.name || "red");
+        let currentUnit = this.units.get(data.id);
         this.actionsProcessing(currentUnit, data);
-      });
-
-      // path
-      emitter.on(EventType.PATH, data => {
-        const waypoints = data || [];
-        this.stage.removeChild(this.waypointsLine);
-        this.waypointsLine = this.drawWaypointsLine(
-          "pathTest",
-          waypoints,
-          "yellow"
-        );
-        this.stage.addChild(this.waypointsLine);
-        this.animateActions(0, waypoints);
-
-        // this.pushLog({ "PATH_INFO：": waypoints });
       });
     },
 
     // 动作解析
     actionsProcessing(unit, data) {
-      // if (!this.isStarted) {
-      //   this.isStarted = true;
-      //   return;
-      // }
       let deathState = unit.getChildByName("deathState");
+      let visualVector = unit.getChildByName("visualVector");
+      const { visualAngle } = data || {};
       unit.alpha = 1;
 
-      // 记录时间戳计算帧数
-      const TIMEFRAME = data.timestamp - unit.timestamp || 0;
-      unit.timestamp = data.timestamp;
+      // 重绘制视野
+      if (visualAngle !== unit.visualAngle) {
+        visualVector = null;
+        visualVector = this.drawSector(
+          "visualVector",
+          0,
+          0,
+          unit.visualDistance,
+          visualAngle,
+          unit.visualRotation,
+          unit.visualColor
+        );
+        unit.visualAngle = visualAngle;
+      }
 
       // 状态处理
       switch (data.state) {
@@ -635,32 +703,54 @@ export default {
             deathState.alpha = 0;
           }, TIMEFRAME);
           break;
-        case "ATTACK":
-          this.triggerAction("Attack", unit, data);
-          break;
         default:
       }
 
-      // 创建补间动画
-      let tween = createjs.Tween.get(unit, {
-        loop: false,
-        override: true
-      }).to(
-        {
-          x: data.x * mapScale,
-          y: data.y * mapScale,
-          rotation: data.angle + 180 - viewAngle / 2
-        },
-        TIMEFRAME,
-        createjs.Ease.linear
-      );
-      // tween.on("change", function(event) {
-      //   console.log(event);
-      // });
+      // cmdProcessor 指令解析
+      this.cmdProcessor(unit, data);
 
       // this.pushLog({ `${unit.name.toUpperCase()}_INFO：`: data });
       console.log(`${unit.name.toUpperCase()}_INFO：`, data);
     },
+
+    // cmdProcessor
+    cmdProcessor(unit, data) {
+      const { id, cmd, timestamp, x, y, rotation } = data || {};
+      // 创建补间对象
+      const tween = createjs.Tween.get(unit, {
+        loop: false,
+        override: true
+      });
+      // tween.on("change", function(event) {
+      //   console.log(event);
+      // });
+
+      // 记录时间戳计算帧数
+      const TIMEFRAME = timestamp - unit.timestamp || 0;
+      unit.timestamp = timestamp;
+      if (cmd) {
+        switch (cmd) {
+          case "s2c_move_start":
+          case "s2c_move_end":
+            // 创建补间动画
+            tween.to(
+              {
+                x: x * mapScale,
+                y: y * mapScale,
+                rotation: rotation + 180 - visualAngle / 2
+              },
+              TIMEFRAME,
+              createjs.Ease.linear
+            );
+
+            break;
+          case "s2c_attack":
+            this.triggerAction("Attack", unit, data);
+            break;
+        }
+      }
+    },
+
     // todo: test动作
     animateActions(RenderAfter, Actions) {
       this.t += RenderAfter;
@@ -671,6 +761,7 @@ export default {
         });
       }, this.t);
     },
+
     // todo: 执行帧动作
     animateFrame(RenderAfter, Frame) {
       let currentUnit = this.units.get("yellow");
@@ -687,21 +778,55 @@ export default {
       this.logs.push(info);
     },
     handleSendCommand(eventName, command) {
+      // 字符处理成JSON对象
       if (typeof command === "string") {
-        let command = new Function("return " + command)();
+        command = new Function("return " + command)();
       }
-      console.log("SEND_CMD：", command);
+      // 事件类型处理
+      switch (eventName) {
+        case "create":
+          // 绘制单位
+          this.unitsConfig.map(params => {
+            params.id = params.unitId;
+            params.name = params.unitName;
+            // 组装想定数据
+            assumptionData.initData[params.group] &&
+              assumptionData.initData[params.group].push(params);
+            // 绘制单位
+            this.paintingUnit(params);
+          });
+          command = assumptionData;
+          break;
+        case "start":
+          createjs.Ticker.paused = false;
+          this.isStarted = true;
+          break;
+        case "pause":
+          createjs.Ticker.paused = true;
+          this.isStarted = false;
+          break;
+      }
+
       // 按指令类型处理
       if (command && command.cmd) {
         switch (command.cmd) {
           case "c2s_switch_weapon":
-            this.selectedUnit.weapon =
-              ((this.selectedUnit.weapon || 0) + 1) %
+            this.selectedUnit.weaponIndex =
+              ((this.selectedUnit.weaponIndex || 0) + 1) %
               Object.keys(WEAPONINDEX).length;
-            command.weapon_index = this.selectedUnit.weapon;
+            command.weapon_index = this.selectedUnit.weaponIndex;
+            break;
+          case "c2s_aim":
+            this.selectedUnit.status = "c2s_carry";
+            command.cmd = this.selectedUnit.status;
+            break;
+          case "c2s_carry":
+            this.selectedUnit.status = "c2s_aim";
+            command.cmd = this.selectedUnit.status;
             break;
         }
       }
+      console.log("SEND_CMD：", command);
       socketMap.emit(eventName, command);
     }
   }

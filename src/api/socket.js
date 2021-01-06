@@ -27,6 +27,15 @@ socketMap.on("start", data => {
 socketMap.on("pause", data => {
   emitter.emit(EventType.PAUSE, data);
 });
+
+socketMap.on("create", data => {
+  emitter.emit(EventType.CREATE, data);
+});
+
+socketMap.on("join", data => {
+  emitter.emit(EventType.JOIN, data);
+});
+
 // 单兵态势
 socketMap.on("actorState", data => {
   emitter.emit(EventType.ACTORSTATE, data);
@@ -39,13 +48,9 @@ socketMap.on("viewEnemy", data => {
 socketMap.on("weaponAction", data => {
   emitter.emit(EventType.WEAPONACTION, data);
 });
-
+// C2S控制
 socketMap.on("controls", data => {
   emitter.emit(EventType.CONTROLS, data);
-});
-
-socketMap.on("path", data => {
-  emitter.emit(EventType.PATH, data);
 });
 
 export default socketMap;
