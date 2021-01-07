@@ -11,6 +11,11 @@
       @contextmenu.prevent
     ></canvas>
     <p>当前选中单位：{{ selectedUnit }}</p>
+    <p>
+      坐标：{{ "X:" + parseCoodination(selectedUnit.x) }}&emsp;{{
+        "Y:" + parseCoodination(selectedUnit.y)
+      }}
+    </p>
     <div class="c-controls">
       <input
         class="btn"
@@ -556,12 +561,12 @@ export default {
       deathMark.alpha = 0;
 
       // 绘制名字
-      const unitNameWidth = (strLength(unitName) / 2) * 12;
+      const unitNameWidth = (strLength(unitName + unitId) / 2) * 12;
       // 当前持枪状态
       unitContainer.unitNameWidth = unitNameWidth;
       const unitLabel = this.drawText(
         "unitLabel",
-        unitName,
+        unitName + unitId,
         visualColor,
         // 0 - (strLength(unitName) / 2) * (12 / 2),
         0,
@@ -787,7 +792,7 @@ export default {
       }
 
       // 重绘制血量
-      if (hp !== unit.hp) {
+      if (Object.prototype.hasOwnProperty(data, "hp") && hp !== unit.hp) {
         unit.removeChild(healthPointBar);
         const newHpContainer = this.drawHealthBar(
           "healthPointBar",
@@ -896,6 +901,10 @@ export default {
         this.logs = this.logs.splice(-this.logMax + 1);
       }
       this.logs.push(info);
+    },
+
+    parseCoodination(num) {
+      return num / mapScale;
     },
     handleSendCommand(eventName, command) {
       // 字符处理成JSON对象
