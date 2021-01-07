@@ -20,6 +20,29 @@
       />
       <input
         class="btn"
+        type="text"
+        v-model="currentAssumpId"
+        placeholder="输入房间想定ID"
+      />
+      <input
+        class="btn"
+        type="button"
+        value="加入房间"
+        @click="
+          handleSendCommand('join', {
+            assumpId: currentAssumpId,
+            actorId: '101'
+          })
+        "
+      />
+      <input
+        class="btn"
+        type="button"
+        value="重新开始"
+        @click="handleSendCommand('restart')"
+      />
+      <input
+        class="btn"
         type="button"
         :value="isStarted ? '暂停对抗' : '开始对抗'"
         @click="handleSendCommand(isStarted ? 'pause' : 'start')"
@@ -87,11 +110,12 @@ import socketMap from "@/api/socket";
 import { EventType, emitter } from "@/EventEmitter";
 import { assumptionData } from "./assumption";
 import { actionRecords } from "./records";
+import { combatUnits } from "./combatUnits";
 
 const visualDistance = 40; // 视线距离
 const visualAngle = 124; // 视线夹角
 
-const mapImg = require("@/assets/map-campaign-2.png"); // 地图背景
+const mapImg = require("@/assets/story/1.png"); // 地图背景
 let mapScale = 10; // 放大倍
 
 const TIMEFRAME = 500; // 帧数
@@ -130,72 +154,7 @@ export default {
       weaponOptions: WEAPONINDEX,
       // 状态类型
       statusOptions: STATUSINDEX,
-      unitsConfig: [
-        {
-          unitId: "10001",
-          unitName: "张小北",
-          group: "reds",
-          visualDistance, // 视线距离
-          visualColor: "0xff0000",
-          visualAngle, // 视线夹角
-          visualRotation: -visualAngle / 2,
-          density: 4,
-          weaponIndex: 0,
-          status: "c2s_carry",
-          position: {
-            x: 4,
-            y: 2
-          }
-        },
-        {
-          unitId: "10002",
-          unitName: "王建国",
-          group: "reds",
-          visualDistance,
-          visualColor: "0x0000ff",
-          visualAngle,
-          visualRotation: -visualAngle / 2,
-          density: 4,
-          weaponIndex: 0,
-          status: "c2s_carry",
-          position: {
-            x: 2,
-            y: 4
-          }
-        },
-        {
-          unitId: "10003",
-          unitName: "林绪",
-          group: "blues",
-          visualDistance,
-          visualColor: "0xffff00",
-          visualAngle,
-          visualRotation: -visualAngle / 2,
-          density: 4,
-          weaponIndex: 0,
-          status: "c2s_carry",
-          position: {
-            x: 125,
-            y: 95
-          }
-        },
-        {
-          unitId: "10004",
-          unitName: "郑成功",
-          group: "blues",
-          visualDistance,
-          visualColor: "0x00ffff",
-          visualAngle,
-          visualRotation: -visualAngle / 2,
-          density: 4,
-          weaponIndex: 0,
-          status: "c2s_carry",
-          position: {
-            x: 122,
-            y: 92
-          }
-        }
-      ],
+
       units: new Map(),
       logs: [], // 日志内容
       logMax: 8,
@@ -203,10 +162,15 @@ export default {
       // todo: test properties
       t: 0, // 开始时间
       waypointsLine: null,
-      currentCmd: null
+      currentCmd: null,
+      currentAssumpId: null
     };
   },
-  computed: {},
+  computed: {
+    unitsConfig() {
+      return this.formatUnitsData(combatUnits);
+    }
+  },
 
   watch: {
     units: {
@@ -303,6 +267,37 @@ export default {
         mapScale = mapScale * 1;
         return { xsize: xsize * 1, ysize: ysize * 1, scale: 1 };
       }
+    },
+
+    formatUnitsData(units) {
+      let newUnits = [];
+      units.forEach(({ id, name, group, position }) => {
+        newUnits.push({
+          unitId: id,
+          unitName: name,
+          group: group,
+          visualDistance, // 视线距离
+          visualColor: group === "reds" ? "0xff0000" : "0x0000ff",
+          visualAngle, // 视线夹角
+          visualRotation: -visualAngle / 2,
+          density: 4,
+          weaponIndex: 0,
+          weapons: {
+            main: "M4A1突击步枪",
+            sub: "USP手枪",
+            knife: "95式多用途刺刀",
+            other: ["M84眩晕手榴弹"]
+          },
+          status: "c2s_carry",
+          position: {
+            rotation: 0,
+            x: position.x,
+            y: position.y
+          }
+        });
+      });
+
+      return newUnits;
     },
 
     // 绘制线条
@@ -548,7 +543,7 @@ export default {
       // 绘制攻击线
       const aimingTo = this.drawLine(
         "aimingTo",
-        attackDistance / mapScale,
+        attackDistance * mapScale,
         unit.visualColor,
         1,
         true
@@ -696,7 +691,7 @@ export default {
             5000,
             createjs.Ease.linear
           );
-        }, TIMEFRAME);
+        }, 0);
       } else {
         // 复活
         // setTimeout(() => {
@@ -784,6 +779,7 @@ export default {
       switch (eventName) {
         case "create":
           // 绘制单位
+          console.log(this.unitsConfig);
           this.unitsConfig.map(params => {
             params.id = params.unitId;
             params.name = params.unitName;
@@ -793,7 +789,10 @@ export default {
             // 绘制单位
             this.paintingUnit(params);
           });
+          console.log(assumptionData);
           command = assumptionData;
+          break;
+        case "join":
           break;
         case "start":
           createjs.Ticker.paused = false;
@@ -825,7 +824,30 @@ export default {
         }
       }
       console.log("SEND_CMD：", command);
-      socketMap.emit(eventName, command);
+      socketMap.emit(eventName, command, res => {
+        console.log("SEND_RETURN：", res);
+        const { object } = res || {};
+        const { reds, blues } = object || {};
+        // 事件类型处理
+        switch (eventName) {
+          case "join":
+            let redUnits = this.formatUnitsData(reds);
+            // 绘制单位
+            redUnits.map(params => {
+              params.visualColor = "0xff0000";
+              // 绘制单位
+              this.paintingUnit(params);
+            });
+            let blueUnits = this.formatUnitsData(blues);
+            blueUnits.map(params => {
+              params.visualColor = "0x0000ff";
+              // 绘制单位
+              this.paintingUnit(params);
+            });
+
+            break;
+        }
+      });
     }
   }
 };

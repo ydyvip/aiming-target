@@ -1,5 +1,6 @@
 export const assumptionData = {
-  assumpId: new Date().getTime(),
+  assumpId: String(new Date().getTime()),
+  // assumpId: "5ff41e563ca91b13e55721cc",
   initData: {
     reds: [],
     blues: []
