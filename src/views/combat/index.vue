@@ -107,6 +107,8 @@
 import { cloneDeep } from "lodash";
 import createjs from "createjs-npm";
 import socketMap from "@/api/socket";
+import { strLength } from "@/utils";
+
 import { EventType, emitter } from "@/EventEmitter";
 import { assumptionData } from "./assumption";
 import { actionRecords } from "./records";
@@ -118,7 +120,7 @@ const visualAngle = 124; // 视线夹角
 const mapImg = require("@/assets/story/1.png"); // 地图背景
 let mapScale = 10; // 放大倍
 
-const TIMEFRAME = 500; // 帧数
+const TIMEFRAME = 250; // 帧数
 const WEAPONINDEX = {
   0: "空手",
   1: "刀",
@@ -280,6 +282,7 @@ export default {
           visualColor: group === "reds" ? "0xff0000" : "0x0000ff",
           visualAngle, // 视线夹角
           visualRotation: -visualAngle / 2,
+          hp: 100, // 血量
           density: 4,
           weaponIndex: 0,
           weapons: {
@@ -359,7 +362,7 @@ export default {
       let shape = new createjs.Shape();
       shape.name = name;
       shape.graphics
-        .beginFill(fillColor)
+        .beginFill(createjs.Graphics.getRGB(fillColor))
         .beginStroke(createjs.Graphics.getRGB(color))
         .drawCircle(0, 0, density);
       return shape;
@@ -370,9 +373,20 @@ export default {
       let shape = new createjs.Shape();
       shape.name = name;
       shape.graphics
-        .beginFill(fillColor)
+        .beginFill(createjs.Graphics.getRGB(fillColor))
         .beginStroke(createjs.Graphics.getRGB(color))
         .drawRect(0, 0, width, height);
+      return shape;
+    },
+
+    // 绘制圆角矩形
+    drawRoundRect(name, color, fillColor, x, y, width, height, radius) {
+      let shape = new createjs.Shape();
+      shape.name = name;
+      shape.graphics
+        .beginFill(createjs.Graphics.getRGB(fillColor))
+        .beginStroke(createjs.Graphics.getRGB(color))
+        .drawRoundRect(x, y, width, height, radius, radius, radius, radius);
       return shape;
     },
 
@@ -430,6 +444,63 @@ export default {
       return shape;
     },
 
+    // 绘制血量
+    drawHealthBar(
+      name,
+      amount,
+      ratio = 1,
+      offsetX = 0,
+      offsetY = 0,
+      height = 6,
+      stroke = 2
+    ) {
+      const hpContainer = new createjs.Container();
+      hpContainer.name = name;
+      // 绘制血量
+      const healthBar = this.drawRoundRect(
+        healthPoints,
+        "0x000000",
+        "0x000000",
+        offsetX,
+        offsetY,
+        amount + stroke * 2,
+        height,
+        height / 2
+      );
+      // 绘制血量
+      const healthPoints = this.drawRoundRect(
+        healthPoints,
+        "0x00ff00",
+        "0x00ff00",
+        offsetX + stroke,
+        offsetY + stroke,
+        amount * ratio,
+        height - stroke * 2,
+        (height - stroke * 2) / 2
+      );
+      // 加入bar
+      hpContainer.addChild(healthBar);
+      // 加入血条
+      hpContainer.addChild(healthPoints);
+      return hpContainer;
+    },
+
+    // 绘制文字
+    drawText(name, context, color, offsetX = 0, offsetY = 0, size = 12) {
+      let text = new createjs.Text(
+        context,
+        `${size}px Arial`,
+        createjs.Graphics.getRGB(color)
+      );
+
+      text.x = offsetX;
+      text.y = offsetY;
+      // 是否按基线绘制
+      // text.textBaseline = "alphabetic";
+      text.textBaseline = "top";
+      return text;
+    },
+
     // 绘制目标单位
     paintingUnit(params) {
       const {
@@ -465,10 +536,10 @@ export default {
       this.units.set(unitId, unitContainer);
 
       // 绘制单位
-      const circle = this.drawCircle("circle", unitId, "white", density);
+      const circle = this.drawCircle("circle", unitId, "0xffffff", density);
 
       // 绘制方向指示线
-      const headTo = this.drawLine("headTo", 10, "black", 2);
+      const headTo = this.drawLine("headTo", 10, "0x000000", 2);
 
       // 绘制目视扇区
       const visualVector = this.drawSector(
@@ -481,8 +552,31 @@ export default {
         visualColor
       );
       // 绘制死亡标志
-      const deathMark = this.drawDeathState("deathState", 6, "0x919191");
+      const deathMark = this.drawDeathState("deathState", 6, "0x414141");
       deathMark.alpha = 0;
+
+      // 绘制名字
+      const unitNameWidth = (strLength(unitName) / 2) * 12;
+      // 当前持枪状态
+      unitContainer.unitNameWidth = unitNameWidth;
+      const unitLabel = this.drawText(
+        "unitLabel",
+        unitName,
+        visualColor,
+        // 0 - (strLength(unitName) / 2) * (12 / 2),
+        0,
+        0,
+        12
+      );
+
+      // 绘制血量容器
+      const hpContainer = this.drawHealthBar(
+        "healthPointBar",
+        unitNameWidth,
+        1,
+        0,
+        14
+      );
 
       // 死亡标志加入容器 0
       unitContainer.addChild(deathMark);
@@ -492,6 +586,10 @@ export default {
       unitContainer.addChild(circle);
       // 方向指示线加入容器 3
       unitContainer.addChild(headTo);
+      // 名字加入容器4
+      unitContainer.addChild(unitLabel);
+      // 血条加入容器5
+      unitContainer.addChild(hpContainer);
 
       // 初始化是否不显示
       // unitContainer.alpha = 0;
@@ -500,8 +598,17 @@ export default {
       unitContainer.y = position.y * mapScale;
 
       // 绑定事件
-      unitContainer.addEventListener("click", e => {
-        this.selectedUnit = unitContainer;
+      unitContainer.on("click", e => {
+        const { currentTarget } = e;
+        this.selectedUnit = currentTarget;
+      });
+
+      // 动态更新数据
+      unitContainer.on("tick", e => {
+        const { currentTarget } = e;
+        const healthPointBar = currentTarget.getChildByName("healthPointBar");
+        unitLabel.rotation = -currentTarget.rotation;
+        healthPointBar.rotation = -currentTarget.rotation;
       });
     },
 
@@ -511,13 +618,13 @@ export default {
       let obstacle;
       switch (type) {
         case "circle":
-          obstacle = this.drawCircle(name, "black", "0xe1e1e1", r);
+          obstacle = this.drawCircle(name, "0x000000", "0xe1e1e1", r);
           obstacle.x = position.x;
           obstacle.y = position.y;
           this.stage.addChild(obstacle);
           break;
         case "rect":
-          obstacle = this.drawRect(name, "black", "0xe1e1e1", w, h);
+          obstacle = this.drawRect(name, "0x000000", "0xe1e1e1", w, h);
           obstacle.x = position.x;
           obstacle.y = position.y;
           this.stage.addChild(obstacle);
@@ -570,7 +677,12 @@ export default {
           // don't let it bubble.
           nativeEvent.preventDefault();
           // 绘制点选圈
-          const mouseMark = this.drawCircle("clickMark", "white", "black", 4);
+          const mouseMark = this.drawCircle(
+            "clickMark",
+            "0xffffff",
+            "0x000000",
+            4
+          );
           mouseMark.x = stageX;
           mouseMark.y = stageY;
           createjs.Tween.get(mouseMark, {
@@ -650,6 +762,7 @@ export default {
     actionsProcessing(unit, data) {
       let deathState = unit.getChildByName("deathState");
       let visualVector = unit.getChildByName("visualVector");
+      let healthPointBar = unit.getChildByName("healthPointBar");
       const { visualAngle, rotation, timestamp, hp } = data || {};
 
       // 记录时间戳计算帧数
@@ -673,6 +786,20 @@ export default {
         unit.visualAngle = visualAngle;
       }
 
+      // 重绘制血量
+      if (hp !== unit.hp) {
+        unit.removeChild(healthPointBar);
+        const newHpContainer = this.drawHealthBar(
+          "healthPointBar",
+          unit.unitNameWidth,
+          hp / 100,
+          0,
+          14
+        );
+        unit.addChildAt(newHpContainer, 5);
+        unit.hp = hp;
+      }
+
       // HP状态处理
       if (hp <= 0) {
         // 阵亡
@@ -688,7 +815,7 @@ export default {
             {
               alpha: 0
             },
-            5000,
+            10000,
             createjs.Ease.linear
           );
         }, 0);
@@ -779,7 +906,6 @@ export default {
       switch (eventName) {
         case "create":
           // 绘制单位
-          console.log(this.unitsConfig);
           this.unitsConfig.map(params => {
             params.id = params.unitId;
             params.name = params.unitName;
