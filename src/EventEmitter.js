@@ -21,6 +21,8 @@ const EventType = {
   VIEWENEMY: "viewEnemy",
   // 武器行为
   WEAPONACTION: "weaponAction",
+  // 转向行为
+  ROTATIONACTION: "rotationAction",
   // C2S控制
   CONTROLS: "controls"
 };

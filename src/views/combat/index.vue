@@ -52,19 +52,6 @@
         :value="isStarted ? '暂停对抗' : '开始对抗'"
         @click="handleSendCommand(isStarted ? 'pause' : 'start')"
       />
-
-      <input
-        class="btn"
-        type="text"
-        v-model="currentCmd"
-        placeholder="输入{}指令对象"
-      />
-      <input
-        class="btn"
-        type="button"
-        value="发送指令"
-        @click="handleSendCommand('controls', currentCmd)"
-      />
       <input
         class="btn"
         type="button"
@@ -99,6 +86,22 @@
         "
       />
     </div>
+    <div class="c-controls">
+      <textarea
+        class="btn"
+        rows="10"
+        cols="100"
+        type="text"
+        v-model="currentCmd"
+        placeholder="输入{}指令对象"
+      />
+      <input
+        class="btn"
+        type="button"
+        value="发送指令"
+        @click="handleSendCommand('controls', currentCmd)"
+      />
+    </div>
 
     <ul class="c-logs">
       <li v-for="(log, i) in logs" :key="i">
@@ -112,7 +115,7 @@
 import { cloneDeep } from "lodash";
 import createjs from "createjs-npm";
 import socketMap from "@/api/socket";
-import { strLength } from "@/utils";
+import { strLength, getAngle } from "@/utils";
 
 import { EventType, emitter } from "@/EventEmitter";
 import { assumptionData } from "./assumption";
@@ -122,7 +125,7 @@ import { combatUnits } from "./combatUnits";
 const visualDistance = 40; // 视线距离
 const visualAngle = 124; // 视线夹角
 
-const mapImg = require("@/assets/story/1.png"); // 地图背景
+const mapImg = require("@/assets/story/7.png"); // 地图背景
 let mapScale = 10; // 放大倍
 
 const TIMEFRAME = 250; // 帧数
@@ -278,11 +281,11 @@ export default {
 
     formatUnitsData(units) {
       let newUnits = [];
-      units.forEach(({ id, name, group, position }) => {
+      units.forEach(({ id, name, group, weapons, position }) => {
         newUnits.push({
           unitId: id,
           unitName: name,
-          group: group,
+          group,
           visualDistance, // 视线距离
           visualColor: group === "reds" ? "0xff0000" : "0x0000ff",
           visualAngle, // 视线夹角
@@ -290,12 +293,7 @@ export default {
           hp: 100, // 血量
           density: 4,
           weaponIndex: 0,
-          weapons: {
-            main: "M4A1突击步枪",
-            sub: "USP手枪",
-            knife: "95式多用途刺刀",
-            other: ["M84眩晕手榴弹"]
-          },
+          weapons,
           status: "c2s_carry",
           position: {
             rotation: 0,
@@ -721,6 +719,41 @@ export default {
             });
           } else if (nativeEvent.button === 1) {
             //鼠标中键
+            const startXY = {
+              x: this.selectedUnit.x,
+              y: this.selectedUnit.y
+            };
+            const endXY = {
+              x: stageX,
+              y: stageY
+            };
+            // 取当前rotation朝向
+            const pointRotation = Math.abs(180 - this.selectedUnit.rotation);
+            // 取两点之间的正北0度夹角角度
+            const directAngle = getAngle(startXY, endXY);
+            if (pointRotation >= 0 && pointRotation < 90) {
+              console.log("2象限", pointRotation);
+            } else if (pointRotation >= 90 && pointRotation < 180) {
+              console.log("1象限", pointRotation);
+            } else if (pointRotation >= 180 && pointRotation < 270) {
+              console.log("4象限", pointRotation);
+            } else {
+              console.log("3象限", pointRotation);
+            }
+
+            console.log(pointRotation, Math.abs((directAngle + 270) % 360));
+            this.handleSendCommand("controls", {
+              id: this.selectedUnit.unitId,
+              cmd: "c2s_rotation",
+              direct: (function check(angle) {
+                if (angle >= 0) {
+                  return 1;
+                } else if (angle < 0) {
+                  return 0;
+                }
+              })(directAngle),
+              angle: Math.abs(directAngle)
+            });
           }
           setTimeout(() => {
             this.stage.removeChild(mouseMark);
@@ -761,6 +794,13 @@ export default {
         let currentUnit = this.units.get(data.id);
         this.actionsProcessing(currentUnit, data);
       });
+
+      // 转向行为
+      emitter.on(EventType.ROTATIONACTION, data => {
+        this.pushLog({ "ROTATIONACTION_INFO：": data });
+        let currentUnit = this.units.get(data.id);
+        this.actionsProcessing(currentUnit, data);
+      });
     },
 
     // 动作解析
@@ -776,7 +816,10 @@ export default {
       unit.alpha = 1;
 
       // 重绘制视野
-      if (visualAngle !== unit.visualAngle) {
+      if (
+        Object.prototype.hasOwnProperty(data, "visualAngle") &&
+        visualAngle !== unit.visualAngle
+      ) {
         unit.removeChild(visualVector);
         const newVisualVector = this.drawSector(
           "visualVector",
@@ -843,7 +886,7 @@ export default {
 
     // cmdProcessor
     cmdProcessor(unit, data, TIMEFRAME) {
-      const { id, cmd, x, y, rotation } = data || {};
+      const { id, cmd, x, y, rotation, consumerTime } = data || {};
       // 创建补间对象
       const tween = createjs.Tween.get(unit, {
         loop: false,
@@ -865,6 +908,17 @@ export default {
                 rotation: rotation + 180
               },
               TIMEFRAME,
+              createjs.Ease.linear
+            );
+
+            break;
+          case "s2c_rotation":
+            // 处理转向
+            tween.to(
+              {
+                rotation: rotation + 180
+              },
+              consumerTime,
               createjs.Ease.linear
             );
 
@@ -958,7 +1012,8 @@ export default {
             break;
         }
       }
-      console.log("SEND_CMD：", command);
+      // console.log("SEND_CMD：", command);
+      console.log("SEND_CMD：", JSON.stringify(command));
       socketMap.emit(eventName, command, res => {
         console.log("SEND_RETURN：", res);
         const { object } = res || {};

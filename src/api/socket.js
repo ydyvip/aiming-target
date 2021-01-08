@@ -48,6 +48,10 @@ socketMap.on("viewEnemy", data => {
 socketMap.on("weaponAction", data => {
   emitter.emit(EventType.WEAPONACTION, data);
 });
+// 转向行为
+socketMap.on("rotationAction", data => {
+  emitter.emit(EventType.ROTATIONACTION, data);
+});
 // C2S控制
 socketMap.on("controls", data => {
   emitter.emit(EventType.CONTROLS, data);
