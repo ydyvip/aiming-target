@@ -55,6 +55,12 @@
       <input
         class="btn"
         type="button"
+        value="播放剧本"
+        @click="handlePlayActors()"
+      />
+      <input
+        class="btn"
+        type="button"
         :value="'武器切换为' + weaponOptions[selectedUnit.weaponIndex]"
         @click="
           handleSendCommand('controls', {
@@ -119,13 +125,13 @@ import { strLength, getAngle } from "@/utils";
 
 import { EventType, emitter } from "@/EventEmitter";
 import { assumptionData } from "./assumption";
-import { actionRecords } from "./records";
+import { actionRecords } from "@/assets/story/records";
 import { combatUnits } from "./combatUnits";
 
 const visualDistance = 40; // 视线距离
 const visualAngle = 124; // 视线夹角
 
-const mapImg = require("@/assets/story/7.png"); // 地图背景
+const mapImg = require("@/assets/map-campaign-2.png"); // 地图背景
 let mapScale = 10; // 放大倍
 
 const TIMEFRAME = 250; // 帧数
@@ -455,26 +461,29 @@ export default {
       offsetX = 0,
       offsetY = 0,
       height = 6,
-      stroke = 2
+      stroke = 1
     ) {
       const hpContainer = new createjs.Container();
       hpContainer.name = name;
-      // 绘制血量
+      // 绘制血量Bar
       const healthBar = this.drawRoundRect(
         healthPoints,
-        "0x000000",
-        "0x000000",
+        "0x414141",
+        "0x414141",
         offsetX,
         offsetY,
         amount + stroke * 2,
         height,
         height / 2
       );
+      // 血量程度
+      const ratioColor =
+        ratio < 0.8 ? "0xffff00" : ratio < 0.4 ? "0xff0000" : "0x00ff00";
       // 绘制血量
       const healthPoints = this.drawRoundRect(
         healthPoints,
-        "0x00ff00",
-        "0x00ff00",
+        ratioColor,
+        ratioColor,
         offsetX + stroke,
         offsetY + stroke,
         amount * ratio,
@@ -728,20 +737,12 @@ export default {
               y: stageY
             };
             // 取当前rotation朝向
-            const pointRotation = Math.abs(180 - this.selectedUnit.rotation);
+            const currentRotation = this.selectedUnit.rotation;
             // 取两点之间的正北0度夹角角度
             const directAngle = getAngle(startXY, endXY);
-            if (pointRotation >= 0 && pointRotation < 90) {
-              console.log("2象限", pointRotation);
-            } else if (pointRotation >= 90 && pointRotation < 180) {
-              console.log("1象限", pointRotation);
-            } else if (pointRotation >= 180 && pointRotation < 270) {
-              console.log("4象限", pointRotation);
-            } else {
-              console.log("3象限", pointRotation);
-            }
+            // 指向角度
+            const rotatingAngle = Math.abs((directAngle + 270) % 360);
 
-            console.log(pointRotation, Math.abs((directAngle + 270) % 360));
             this.handleSendCommand("controls", {
               id: this.selectedUnit.unitId,
               cmd: "c2s_rotation",
@@ -751,8 +752,9 @@ export default {
                 } else if (angle < 0) {
                   return 0;
                 }
-              })(directAngle),
-              angle: Math.abs(directAngle)
+              })(rotatingAngle - currentRotation),
+              // 转角角度 只要计算差值
+              angle: Math.abs(rotatingAngle - currentRotation)
             });
           }
           setTimeout(() => {
@@ -905,7 +907,7 @@ export default {
               {
                 x: x * mapScale,
                 y: y * mapScale,
-                rotation: rotation + 180
+                rotation: this.parseRotating(unit, rotation, true)
               },
               TIMEFRAME,
               createjs.Ease.linear
@@ -916,7 +918,7 @@ export default {
             // 处理转向
             tween.to(
               {
-                rotation: rotation + 180
+                rotation: this.parseRotating(unit, rotation)
               },
               consumerTime,
               createjs.Ease.linear
@@ -928,6 +930,41 @@ export default {
             break;
         }
       }
+    },
+
+    // parseRotating
+    parseRotating(graphics, targetDegree, noBias = false) {
+      targetDegree -= 180;
+      const rotation = graphics.rotation;
+      const currentDegree = rotation % 180;
+      // const direct = degree => {
+      //   if (degree < -180) degree = 360 + degree;
+      //   else if (degree > 180) degree = degree - 360;
+      //   return degree;
+      // };
+      const bias = targetDegree - currentDegree;
+      if (noBias && (Math.abs(bias) === 0 || Math.abs(bias) === 180))
+        return rotation;
+      const diffDegree = Math.min(
+        Math.abs(targetDegree - currentDegree),
+        360 - Math.abs(targetDegree - currentDegree)
+      );
+      console.log(
+        "  rotation:",
+        rotation,
+        "\n  currentDegree:",
+        currentDegree,
+        "\n  targetDegree:",
+        targetDegree,
+        "\n  bias:",
+        bias,
+        "\n  diffDegree:",
+        diffDegree
+      );
+      if (bias < 0) {
+        return rotation - diffDegree;
+      }
+      return rotation + diffDegree;
     },
 
     // todo: test动作
@@ -943,11 +980,17 @@ export default {
 
     // todo: 执行帧动作
     animateFrame(RenderAfter, Frame) {
-      let currentUnit = this.units.get("yellow");
+      // let currentUnit = this.units.get("yellow");
       this.t += RenderAfter;
       setTimeout(() => {
-        this.actionsProcessing(currentUnit, Frame);
+        // this.actionsProcessing(currentUnit, Frame);
+        this.handleSendCommand("controls", Frame);
       }, this.t);
+    },
+
+    // todo: 播放
+    handlePlayActors() {
+      this.animateActions(0, actionRecords);
     },
 
     pushLog(info) {
