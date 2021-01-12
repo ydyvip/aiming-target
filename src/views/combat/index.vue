@@ -62,23 +62,13 @@
         class="btn"
         type="button"
         :value="'武器切换为' + weaponOptions[selectedUnit.weaponIndex]"
-        @click="
-          handleSendCommand('controls', {
-            id: selectedUnit.unitId,
-            cmd: 'c2s_switch_weapon'
-          })
-        "
+        @click="handleSwitchWeapon()"
       />
       <input
         class="btn"
         type="button"
         :value="'状态切换为' + statusOptions[selectedUnit.status]"
-        @click="
-          handleSendCommand('controls', {
-            id: selectedUnit.unitId,
-            cmd: selectedUnit.status
-          })
-        "
+        @click="handleSwitchStatus()"
       />
       <input
         class="btn"
@@ -107,10 +97,16 @@
         value="发送指令"
         @click="handleSendCommand('controls', currentCmd)"
       />
+      <input
+        class="btn"
+        type="button"
+        value="输出历史"
+        @click="handleExportRecords()"
+      />
     </div>
 
     <ul class="c-logs">
-      <li v-for="(log, i) in logs" :key="i">
+      <li v-for="(log, i) in reverseLogs" :key="i">
         {{ log }}
       </li>
     </ul>
@@ -139,8 +135,7 @@ const WEAPONINDEX = {
   0: "空手",
   1: "刀",
   2: "手枪",
-  3: "步枪",
-  4: "狙击枪"
+  3: "步枪"
 };
 const STATUSINDEX = {
   c2s_aim: "瞄准",
@@ -176,13 +171,17 @@ export default {
       logMax: 8,
 
       // todo: test properties
-      t: 0, // 开始时间
       waypointsLine: null,
       currentCmd: null,
-      currentAssumpId: null
+      currentAssumpId: null,
+      startTime: 0, // 开始时间
+      cmdHistoryRecords: [] // 历史记录
     };
   },
   computed: {
+    reverseLogs() {
+      return this.logs.reverse();
+    },
     unitsConfig() {
       return this.formatUnitsData(combatUnits);
     }
@@ -214,9 +213,6 @@ export default {
       // this.stage.scaleX = scale;
       // this.stage.scaleY = scale;
     };
-
-    // todo: test
-    // this.animateActions(0, actionRecords);
   },
   destroy() {
     socketMap.close();
@@ -478,7 +474,7 @@ export default {
       );
       // 血量程度
       const ratioColor =
-        ratio < 0.8 ? "0xffff00" : ratio < 0.4 ? "0xff0000" : "0x00ff00";
+        ratio < 0.4 ? "0xff0000" : ratio < 0.8 ? "0xffff00" : "0x00ff00";
       // 绘制血量
       const healthPoints = this.drawRoundRect(
         healthPoints,
@@ -610,9 +606,13 @@ export default {
       unitContainer.y = position.y * mapScale;
 
       // 绑定事件
-      unitContainer.on("click", e => {
-        const { currentTarget } = e;
-        this.selectedUnit = currentTarget;
+      unitContainer.on("click", event => {
+        const { currentTarget, nativeEvent } = event;
+        nativeEvent.preventDefault();
+        // 鼠标左键
+        if (nativeEvent.button === 0 || nativeEvent.type === "touchstart") {
+          this.selectedUnit = currentTarget;
+        }
       });
 
       // 动态更新数据
@@ -819,9 +819,10 @@ export default {
 
       // 重绘制视野
       if (
-        Object.prototype.hasOwnProperty(data, "visualAngle") &&
+        Object.prototype.hasOwnProperty.call(data, "visualAngle") &&
         visualAngle !== unit.visualAngle
       ) {
+        unit.visualAngle = visualAngle;
         unit.removeChild(visualVector);
         const newVisualVector = this.drawSector(
           "visualVector",
@@ -833,11 +834,10 @@ export default {
           unit.visualColor
         );
         unit.addChildAt(newVisualVector, 1);
-        unit.visualAngle = visualAngle;
       }
 
       // 重绘制血量
-      if (Object.prototype.hasOwnProperty(data, "hp") && hp !== unit.hp) {
+      if (Object.prototype.hasOwnProperty.call(data, "hp") && hp !== unit.hp) {
         unit.removeChild(healthPointBar);
         const newHpContainer = this.drawHealthBar(
           "healthPointBar",
@@ -907,7 +907,7 @@ export default {
               {
                 x: x * mapScale,
                 y: y * mapScale,
-                rotation: this.parseRotating(unit, rotation, true)
+                rotation: this.parseRotating(unit, rotation)
               },
               TIMEFRAME,
               createjs.Ease.linear
@@ -916,13 +916,14 @@ export default {
             break;
           case "s2c_rotation":
             // 处理转向
-            tween.to(
-              {
-                rotation: this.parseRotating(unit, rotation)
-              },
-              consumerTime,
-              createjs.Ease.linear
-            );
+            if (consumerTime)
+              tween.to(
+                {
+                  rotation: this.parseRotating(unit, rotation, true)
+                },
+                consumerTime,
+                createjs.Ease.linear
+              );
 
             break;
           case "s2c_attack":
@@ -936,31 +937,32 @@ export default {
     parseRotating(graphics, targetDegree, noBias = false) {
       targetDegree -= 180;
       const rotation = graphics.rotation;
-      const currentDegree = rotation % 180;
+      const deltaAngle = rotation % 180;
+      const currentDegree = Object.is(deltaAngle, -0) ? -180 : deltaAngle;
       // const direct = degree => {
       //   if (degree < -180) degree = 360 + degree;
       //   else if (degree > 180) degree = degree - 360;
       //   return degree;
       // };
       const bias = targetDegree - currentDegree;
-      if (noBias && (Math.abs(bias) === 0 || Math.abs(bias) === 180))
+      if (!noBias && (Math.abs(bias) === 0 || Math.abs(bias) === 180))
         return rotation;
       const diffDegree = Math.min(
         Math.abs(targetDegree - currentDegree),
         360 - Math.abs(targetDegree - currentDegree)
       );
-      console.log(
-        "  rotation:",
-        rotation,
-        "\n  currentDegree:",
-        currentDegree,
-        "\n  targetDegree:",
-        targetDegree,
-        "\n  bias:",
-        bias,
-        "\n  diffDegree:",
-        diffDegree
-      );
+      // console.log(
+      //   "  rotation:",
+      //   rotation,
+      //   "\n  currentDegree:",
+      //   currentDegree,
+      //   "\n  targetDegree:",
+      //   targetDegree,
+      //   "\n  bias:",
+      //   bias,
+      //   "\n  diffDegree:",
+      //   diffDegree
+      // );
       if (bias < 0) {
         return rotation - diffDegree;
       }
@@ -968,29 +970,30 @@ export default {
     },
 
     // todo: test动作
-    animateActions(RenderAfter, Actions) {
-      this.t += RenderAfter;
-
+    animateActions(RenderAfter, Frame) {
       setTimeout(() => {
-        Actions.forEach(Frame => {
-          this.animateFrame(TIMEFRAME, Frame);
-        });
-      }, this.t);
+        this.animateFrame(RenderAfter, Frame);
+      }, RenderAfter);
     },
 
     // todo: 执行帧动作
     animateFrame(RenderAfter, Frame) {
-      // let currentUnit = this.units.get("yellow");
-      this.t += RenderAfter;
+      RenderAfter += this.startTime;
       setTimeout(() => {
-        // this.actionsProcessing(currentUnit, Frame);
         this.handleSendCommand("controls", Frame);
-      }, this.t);
+      }, RenderAfter);
     },
 
     // todo: 播放
     handlePlayActors() {
-      this.animateActions(0, actionRecords);
+      this.startTime = new Date().getTime();
+      actionRecords.forEach(frame => {
+        this.animateActions(frame.TIMEFRAME, frame);
+      });
+    },
+    // todo: 导出记录
+    handleExportRecords() {
+      console.warn("History_Records:", JSON.stringify(this.cmdHistoryRecords));
     },
 
     pushLog(info) {
@@ -1002,6 +1005,35 @@ export default {
 
     parseCoodination(num) {
       return num / mapScale;
+    },
+    handleSwitchWeapon() {
+      this.selectedUnit.weaponIndex =
+        ((this.selectedUnit.weaponIndex || 0) + 1) %
+        Object.keys(WEAPONINDEX).length;
+      let weapon_index = this.selectedUnit.weaponIndex;
+      this.handleSendCommand("controls", {
+        id: this.selectedUnit.unitId,
+        cmd: "c2s_switch_weapon",
+        weapon_index
+      });
+    },
+    handleSwitchStatus() {
+      let status = this.selectedUnit.status;
+      switch (status) {
+        case "c2s_aim":
+          this.selectedUnit.status = "c2s_carry";
+
+          break;
+        case "c2s_carry":
+          this.selectedUnit.status = "c2s_aim";
+
+          break;
+      }
+
+      this.handleSendCommand("controls", {
+        id: this.selectedUnit.unitId,
+        cmd: this.selectedUnit.status
+      });
     },
     handleSendCommand(eventName, command) {
       // 字符处理成JSON对象
@@ -1027,6 +1059,7 @@ export default {
         case "join":
           break;
         case "start":
+          this.startTime = new Date().getTime();
           createjs.Ticker.paused = false;
           this.isStarted = true;
           break;
@@ -1040,23 +1073,36 @@ export default {
       if (command && command.cmd) {
         switch (command.cmd) {
           case "c2s_switch_weapon":
-            this.selectedUnit.weaponIndex =
-              ((this.selectedUnit.weaponIndex || 0) + 1) %
-              Object.keys(WEAPONINDEX).length;
-            command.weapon_index = this.selectedUnit.weaponIndex;
             break;
           case "c2s_aim":
-            this.selectedUnit.status = "c2s_carry";
-            command.cmd = this.selectedUnit.status;
             break;
           case "c2s_carry":
-            this.selectedUnit.status = "c2s_aim";
-            command.cmd = this.selectedUnit.status;
             break;
         }
       }
       // console.log("SEND_CMD：", command);
       console.log("SEND_CMD：", JSON.stringify(command));
+      // todo: 捕获条件
+      const unitIds = ["213"];
+      // 记录指令
+      if (
+        command &&
+        command.cmd &&
+        !["create", "join", "start", "pause"].includes(command.cmd) &&
+        unitIds.includes(command.id)
+      ) {
+        const TIMEFRAME = new Date().getTime() - this.startTime;
+        this.cmdHistoryRecords.push(
+          Object.assign(
+            {
+              TIMEFRAME
+            },
+            command
+          )
+        );
+      }
+
+      // 发送指令
       socketMap.emit(eventName, command, res => {
         console.log("SEND_RETURN：", res);
         const { object } = res || {};
