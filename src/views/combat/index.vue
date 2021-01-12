@@ -602,6 +602,11 @@ export default {
       // 初始化是否不显示
       // unitContainer.alpha = 0;
 
+      // 初始化阵营方向
+      if (params.group === "blues") {
+        unitContainer.rotation = -180;
+      }
+
       unitContainer.x = position.x * mapScale;
       unitContainer.y = position.y * mapScale;
 
@@ -1083,7 +1088,7 @@ export default {
       // console.log("SEND_CMD：", command);
       console.log("SEND_CMD：", JSON.stringify(command));
       // todo: 捕获条件
-      const unitIds = ["213"];
+      const unitIds = ["113"];
       // 记录指令
       if (
         command &&
