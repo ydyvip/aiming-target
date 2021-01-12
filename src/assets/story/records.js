@@ -74,12 +74,19 @@ export const actionRecords = [
     cmd: "c2s_move",
     position: { x: 56.12428454619787, y: 73.34423548650858 }
   },
-  { TIMEFRAME: 41221, id: "112", cmd: "c2s_attack" },
-  { TIMEFRAME: 41784, id: "112", cmd: "c2s_attack" },
-  { TIMEFRAME: 42650, id: "112", cmd: "c2s_attack" },
-  { TIMEFRAME: 43064, id: "112", cmd: "c2s_attack" },
-  { TIMEFRAME: 43776, id: "112", cmd: "c2s_attack" },
-  { TIMEFRAME: 44153, id: "112", cmd: "c2s_attack" },
+  {
+    TIMEFRAME: 41534,
+    id: "112",
+    cmd: "c2s_rotation",
+    direct: 0,
+    angle: 30
+  },
+  { TIMEFRAME: 42221, id: "112", cmd: "c2s_attack" },
+  { TIMEFRAME: 42884, id: "112", cmd: "c2s_attack" },
+  { TIMEFRAME: 43550, id: "112", cmd: "c2s_attack" },
+  { TIMEFRAME: 44264, id: "112", cmd: "c2s_attack" },
+  { TIMEFRAME: 45476, id: "112", cmd: "c2s_attack" },
+  { TIMEFRAME: 47153, id: "112", cmd: "c2s_attack" },
   // 追击
   {
     TIMEFRAME: 48258,
@@ -633,7 +640,7 @@ export const actionRecords = [
     id: "213",
     cmd: "c2s_rotation",
     direct: 1,
-    angle: 169.65394343559728
+    angle: 178.65394343559728
   },
   {
     TIMEFRAME: 34407,
