@@ -968,10 +968,10 @@ export default {
       //   "\n  diffDegree:",
       //   diffDegree
       // );
-      if (bias < 0) {
-        return rotation - diffDegree;
-      }
-      return rotation + diffDegree;
+      // if (bias < 0) {
+      //   return rotation - diffDegree;
+      // }
+      return targetDegree;
     },
 
     // todo: test动作
@@ -1058,7 +1058,7 @@ export default {
             // 绘制单位
             this.paintingUnit(params);
           });
-          console.log(assumptionData);
+
           command = assumptionData;
           break;
         case "join":
@@ -1088,7 +1088,7 @@ export default {
       // console.log("SEND_CMD：", command);
       console.log("SEND_CMD：", JSON.stringify(command));
       // todo: 捕获条件
-      const unitIds = ["113"];
+      const unitIds = ["212"];
       // 记录指令
       if (
         command &&
