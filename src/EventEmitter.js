@@ -9,6 +9,8 @@ const EventType = {
   INITENV: "initEnv",
   // 开始推演
   START: "start",
+  // 继续推演
+  CONTINUE: "continue",
   // 暂停推演
   PAUSE: "pause",
   // 创建房间

@@ -18,11 +18,7 @@ export const combatUnits = [
     type: "soldier",
     group: "reds",
     position: { x: 3.5295679892706815, y: 67.00896452032798 },
-    weapons: {
-      main: "M4A1突击步枪",
-      sub: "贝雷塔M9手枪",
-      other: ["M型手榴弹"]
-    }
+    weapons: { main: "M4A1突击步枪", sub: "贝雷塔M9手枪", other: ["M型手榴弹"] }
   },
   {
     id: "112",
@@ -57,7 +53,7 @@ export const combatUnits = [
     weapons: {
       main: "L85A1式突击步枪",
       sub: "西格&绍尔SIGP228手枪",
-      other: []
+      other: ["M84眩晕手榴弹"]
     }
   },
   // blue
@@ -78,7 +74,7 @@ export const combatUnits = [
     name: "廖信忠",
     type: "soldier",
     group: "blues",
-    position: { x: 99.65160702599282, y: 48.395739280319695 },
+    position: { x: 100.5317553750573, y: 43.69763247076627 },
     weapons: {
       main: "M4A1突击步枪",
       sub: "西格&绍尔SIGP228手枪",
@@ -90,7 +86,7 @@ export const combatUnits = [
     name: "蒋经纬",
     type: "soldier",
     group: "blues",
-    position: { x: 105.84221466042125, y: 27.742089390185694 },
+    position: { x: 106.09732306547181, y: 23.49062491925224 },
     weapons: {
       main: "AK-47步枪",
       sub: "贝雷塔M9手枪",
@@ -102,7 +98,7 @@ export const combatUnits = [
     name: "陈建忠",
     type: "soldier",
     group: "blues",
-    position: { x: 116.02269748497723, y: 10.908521228072019 },
+    position: { x: 116.28571598704315, y: 12.567328027092303 },
     weapons: {
       main: "M16式突击步枪",
       sub: "西格&绍尔SIGP228手枪",
@@ -115,10 +111,6 @@ export const combatUnits = [
     type: "soldier",
     group: "blues",
     position: { x: 120.13803784480939, y: 68.89108166009788 },
-    weapons: {
-      main: "AK-47步枪",
-      sub: "贝雷塔M9手枪",
-      other: ["M型手榴弹"]
-    }
+    weapons: { main: "AK-47步枪", sub: "贝雷塔M9手枪", other: ["M型手榴弹"] }
   }
 ];

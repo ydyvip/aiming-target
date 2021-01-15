@@ -10,18 +10,28 @@
       style="border:1px solid #e1e1e1;"
       @contextmenu.prevent
     ></canvas>
-    <p>当前选中单位：{{ selectedUnit }}</p>
+    <p>当前选中单位:{{ selectedUnit }}</p>
     <p>
-      坐标：{{ "X:" + parseCoodination(selectedUnit.x) }}&emsp;{{
-        "Y:" + parseCoodination(selectedUnit.y)
-      }}
+      指令总数:{{ actionRecords.length }}；&emsp;已播放指令:{{
+        cmdPlayedRecords.length
+      }}；&emsp;栈存指令:{{ cmdStackRecords.length }}；&emsp;坐标:{{
+        "X:" + parseCoodination(selectedUnit.x)
+      }}&emsp;{{ "Y:" + parseCoodination(selectedUnit.y) }}
     </p>
     <div class="c-controls">
       <input
         class="btn"
         type="button"
         value="创建房间"
+        :disabled="isCreated"
         @click="handleSendCommand('create')"
+      />
+      <input
+        class="btn"
+        type="button"
+        value="开始对抗"
+        :disabled="isStarted"
+        @click="handleSendCommand('start')"
       />
       <input
         class="btn"
@@ -49,13 +59,15 @@
       <input
         class="btn"
         type="button"
-        :value="isStarted ? '暂停对抗' : '开始对抗'"
-        @click="handleSendCommand(isStarted ? 'pause' : 'start')"
+        :value="!isPaused ? '暂停对抗' : '继续对抗'"
+        :disabled="!isStarted"
+        @click="handleSwitchPlaying()"
       />
       <input
         class="btn"
         type="button"
         value="播放剧本"
+        :disabled="isPlayed"
         @click="handlePlayActors()"
       />
       <input
@@ -147,7 +159,10 @@ export default {
   data() {
     return {
       isPlanning: false, // 是否为规划模式
+      isCreated: false, // 是否创建房间
       isStarted: false, // 是否开始对抗
+      isPlayed: false, // 是否播放脚本
+      isPaused: false, // 是否暂停
       stage: null,
       // 选中的unit
       selectedUnit: {
@@ -174,8 +189,14 @@ export default {
       waypointsLine: null,
       currentCmd: null,
       currentAssumpId: null,
-      startTime: 0, // 开始时间
-      cmdHistoryRecords: [] // 历史记录
+
+      startTime: 0, // 开始时间节点
+      duringTime: 0, // 播放经过时间
+
+      actionRecords, // 指令总数
+      cmdHistoryRecords: [], // 历史记录
+      cmdStackRecords: [], // 播放指令栈
+      cmdPlayedRecords: [] // 播放过的指令
     };
   },
   computed: {
@@ -747,7 +768,7 @@ export default {
             const directAngle = getAngle(startXY, endXY);
             // 指向角度
             const rotatingAngle = Math.abs((directAngle + 270) % 360);
-
+            console.log(currentRotation);
             this.handleSendCommand("controls", {
               id: this.selectedUnit.unitId,
               cmd: "c2s_rotation",
@@ -888,12 +909,12 @@ export default {
       this.cmdProcessor(unit, data, TIMEFRAME);
 
       // this.pushLog({ `${unit.name.toUpperCase()}_INFO：`: data });
-      console.log(`${unit.name.toUpperCase()}_INFO：`, data);
+      // console.log(`${unit.name.toUpperCase()}_INFO：`, data);
     },
 
     // cmdProcessor
     cmdProcessor(unit, data, TIMEFRAME) {
-      const { id, cmd, x, y, rotation, consumerTime } = data || {};
+      const { id, cmd, x, y, rotation, consumerTime = 100 } = data || {};
       // 创建补间对象
       const tween = createjs.Tween.get(unit, {
         loop: false,
@@ -942,20 +963,35 @@ export default {
     parseRotating(graphics, targetDegree, noBias = false) {
       targetDegree -= 180;
       const rotation = graphics.rotation;
-      const deltaAngle = rotation % 180;
-      const currentDegree = Object.is(deltaAngle, -0) ? -180 : deltaAngle;
-      // const direct = degree => {
-      //   if (degree < -180) degree = 360 + degree;
-      //   else if (degree > 180) degree = degree - 360;
-      //   return degree;
-      // };
-      const bias = targetDegree - currentDegree;
-      if (!noBias && (Math.abs(bias) === 0 || Math.abs(bias) === 180))
-        return rotation;
+      const currentDegree =
+        rotation >= -180 && rotation < 180 ? rotation : rotation % 180;
+      // const currentDegree = Object.is(deltaAngle, -0) ? 0 : deltaAngle;
+
       const diffDegree = Math.min(
         Math.abs(targetDegree - currentDegree),
         360 - Math.abs(targetDegree - currentDegree)
       );
+      const bias = targetDegree - currentDegree;
+
+      // if (!noBias && bias === -180 && !Object.is(currentDegree, -0)) {
+      //   return rotation - diffDegree;
+      // }
+      // if (
+      //   !noBias &&
+      //   (Math.abs(bias) === 0 ||
+      //     // parseInt(bias) === 180 ||
+      //     // parseInt(bias) === -180 ||
+      //     (rotation >= -180 && rotation < 180 && diffDegree === 180) ||
+      //     (targetDegree === -180 && Object.is(currentDegree, 0)) ||
+      //     (targetDegree === -180 && Object.is(currentDegree, -0)))
+      // ) {
+      //   return rotation;
+      // }
+      // if (!noBias && bias === 180 && !Object.is(currentDegree, 0)) {
+      //   return rotation + diffDegree;
+      // }
+
+      const lOrR = (bias + 360) % 360 > 180;
       // console.log(
       //   "  rotation:",
       //   rotation,
@@ -963,12 +999,12 @@ export default {
       //   currentDegree,
       //   "\n  targetDegree:",
       //   targetDegree,
-      //   "\n  bias:",
-      //   bias,
+      //   "\n  lOrR:",
+      //   lOrR ? "turn left" : "turn right",
       //   "\n  diffDegree:",
       //   diffDegree
       // );
-      // if (bias < 0) {
+      // if (lOrR) {
       //   return rotation - diffDegree;
       // }
       return targetDegree;
@@ -976,25 +1012,27 @@ export default {
 
     // todo: test动作
     animateActions(RenderAfter, Frame) {
-      setTimeout(() => {
-        this.animateFrame(RenderAfter, Frame);
-      }, RenderAfter);
+      this.cmdStackRecords.push(
+        setTimeout(() => {
+          this.handleSendCommand("controls", Frame);
+        }, RenderAfter)
+      );
     },
 
-    // todo: 执行帧动作
-    animateFrame(RenderAfter, Frame) {
-      RenderAfter += this.startTime;
-      setTimeout(() => {
-        this.handleSendCommand("controls", Frame);
-      }, RenderAfter);
+    // 播存动画
+    savingActions(conditionFunc = frame => frame, offsetTime = 0) {
+      this.actionRecords.filter(conditionFunc).forEach(frame => {
+        this.animateActions(frame.TIMEFRAME - offsetTime, frame);
+      });
     },
 
     // todo: 播放
     handlePlayActors() {
-      this.startTime = new Date().getTime();
-      actionRecords.forEach(frame => {
-        this.animateActions(frame.TIMEFRAME, frame);
-      });
+      if (!this.isPlayed) {
+        this.startTime = new Date().getTime();
+        this.savingActions();
+        this.isPlayed = true;
+      }
     },
     // todo: 导出记录
     handleExportRecords() {
@@ -1040,6 +1078,36 @@ export default {
         cmd: this.selectedUnit.status
       });
     },
+    handleSwitchPlaying() {
+      // 定义变量
+      const status = this.isPaused ? "continue" : "pause";
+      switch (status) {
+        // 暂停
+        case "continue":
+          if (this.startTime !== 0) {
+            // 经过时间
+            this.savingActions(frame => {
+              return !this.cmdPlayedRecords.includes(frame);
+            }, this.duringTime);
+          }
+          createjs.Ticker.paused = false;
+          this.isPaused = false;
+
+          break;
+        // 继续
+        case "pause":
+          // 清除播放时节
+          this.cmdStackRecords.forEach(record => {
+            clearTimeout(record);
+          });
+          this.cmdStackRecords = [];
+          createjs.Ticker.paused = true;
+          this.isPaused = true;
+          break;
+      }
+
+      this.handleSendCommand(status);
+    },
     handleSendCommand(eventName, command) {
       // 字符处理成JSON对象
       if (typeof command === "string") {
@@ -1048,29 +1116,30 @@ export default {
       // 事件类型处理
       switch (eventName) {
         case "create":
-          // 绘制单位
-          this.unitsConfig.map(params => {
-            params.id = params.unitId;
-            params.name = params.unitName;
-            // 组装想定数据
-            assumptionData.initData[params.group] &&
-              assumptionData.initData[params.group].push(params);
+          if (!this.isCreated) {
             // 绘制单位
-            this.paintingUnit(params);
-          });
+            this.unitsConfig.map(params => {
+              params.id = params.unitId;
+              params.name = params.unitName;
+              // 组装想定数据
+              assumptionData.initData[params.group] &&
+                assumptionData.initData[params.group].push(params);
+              // 绘制单位
+              this.paintingUnit(params);
+            });
 
-          command = assumptionData;
+            command = assumptionData;
+            this.isCreated = true;
+          }
           break;
         case "join":
           break;
         case "start":
-          this.startTime = new Date().getTime();
-          createjs.Ticker.paused = false;
           this.isStarted = true;
           break;
+        case "continue":
+          break;
         case "pause":
-          createjs.Ticker.paused = true;
-          this.isStarted = false;
           break;
       }
 
@@ -1088,12 +1157,14 @@ export default {
       // console.log("SEND_CMD：", command);
       console.log("SEND_CMD：", JSON.stringify(command));
       // todo: 捕获条件
-      const unitIds = ["212"];
+      const unitIds = ["202"];
       // 记录指令
       if (
         command &&
         command.cmd &&
-        !["create", "join", "start", "pause"].includes(command.cmd) &&
+        !["create", "join", "start", "continue", "pause"].includes(
+          command.cmd
+        ) &&
         unitIds.includes(command.id)
       ) {
         const TIMEFRAME = new Date().getTime() - this.startTime;
@@ -1112,6 +1183,15 @@ export default {
         console.log("SEND_RETURN：", res);
         const { object } = res || {};
         const { reds, blues } = object || {};
+        // 处理已发送的记录指令
+        if (
+          command &&
+          Object.prototype.hasOwnProperty.call(command, "TIMEFRAME")
+        ) {
+          this.cmdPlayedRecords.push(command);
+          this.duringTime = Math.max(this.duringTime, command.TIMEFRAME);
+        }
+
         // 事件类型处理
         switch (eventName) {
           case "join":

@@ -24,6 +24,10 @@ socketMap.on("start", data => {
   emitter.emit(EventType.START, data);
 });
 
+socketMap.on("continue", data => {
+  emitter.emit(EventType.CONTINUE, data);
+});
+
 socketMap.on("pause", data => {
   emitter.emit(EventType.PAUSE, data);
 });
