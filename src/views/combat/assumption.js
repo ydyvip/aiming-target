@@ -3,6 +3,8 @@ export const assumptionData = {
   // assumpId: "5ff41e563ca91b13e55721cc",
   initData: {
     mapType: "single_soldier",
+    frame: 10,
+    tickTime: 50,
     reds: [],
     blues: []
   }

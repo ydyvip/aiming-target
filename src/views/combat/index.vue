@@ -133,7 +133,7 @@ import { strLength, getAngle } from "@/utils";
 
 import { EventType, emitter } from "@/EventEmitter";
 import { assumptionData } from "./assumption";
-import { actionRecords } from "@/assets/story/records";
+import { actionRecords } from "@/assets/story/records-2";
 import { combatUnits } from "./combatUnits";
 
 const visualDistance = 40; // 视线距离
@@ -166,6 +166,7 @@ export default {
       stage: null,
       // 选中的unit
       selectedUnit: {
+        unitId: null,
         name: null,
         weaponIndex: 0,
         status: "c2s_carry"
@@ -200,6 +201,9 @@ export default {
     };
   },
   computed: {
+    currentUnitId() {
+      return this.$route.query.id || 0;
+    },
     reverseLogs() {
       return this.logs.reverse();
     },
@@ -215,13 +219,16 @@ export default {
       deep: true
     }
   },
-  created() {},
+  created() {
+    this.selectedUnit.unitId = this.currentUnitId;
+  },
   mounted() {
     const { xsize, ysize } = this.resizeToFit("canvasWrap");
     this.init(xsize, ysize);
     this.initMap(mapImg, xsize, ysize);
 
     this.syncSocket();
+    this.bindShortCut();
 
     window.onresize = () => {
       console.log("resize");
@@ -635,6 +642,10 @@ export default {
       unitContainer.on("click", event => {
         const { currentTarget, nativeEvent } = event;
         nativeEvent.preventDefault();
+        // 锁定操作单位
+        if (this.currentUnitId && currentTarget.unitId !== this.currentUnitId) {
+          return;
+        }
         // 鼠标左键
         if (nativeEvent.button === 0 || nativeEvent.type === "touchstart") {
           this.selectedUnit = currentTarget;
@@ -743,7 +754,7 @@ export default {
               cmd: "c2s_attack"
             });
           } else if (nativeEvent.button === 2) {
-            //鼠标右键
+            // 鼠标右键
             this.handleSendCommand("controls", {
               id: this.selectedUnit.unitId,
               cmd: "c2s_move",
@@ -753,7 +764,7 @@ export default {
               }
             });
           } else if (nativeEvent.button === 1) {
-            //鼠标中键
+            // 鼠标中键
             const startXY = {
               x: this.selectedUnit.x,
               y: this.selectedUnit.y
@@ -768,7 +779,7 @@ export default {
             const directAngle = getAngle(startXY, endXY);
             // 指向角度
             const rotatingAngle = Math.abs((directAngle + 270) % 360);
-            console.log(currentRotation);
+
             this.handleSendCommand("controls", {
               id: this.selectedUnit.unitId,
               cmd: "c2s_rotation",
@@ -789,6 +800,18 @@ export default {
         },
         false
       );
+    },
+    // 绑定快捷按键
+    bindShortCut() {
+      document.addEventListener("keydown", event => {
+        const { keyCode } = event || {};
+        switch (keyCode) {
+          case 32: // 空格
+            event.preventDefault();
+            if (this.isStarted) this.handleSwitchPlaying();
+            break;
+        }
+      });
     },
     doTicker(event) {
       // 更新舞台将呈现下一帧
@@ -1054,6 +1077,7 @@ export default {
         ((this.selectedUnit.weaponIndex || 0) + 1) %
         Object.keys(WEAPONINDEX).length;
       let weapon_index = this.selectedUnit.weaponIndex;
+
       this.handleSendCommand("controls", {
         id: this.selectedUnit.unitId,
         cmd: "c2s_switch_weapon",
@@ -1128,6 +1152,10 @@ export default {
               this.paintingUnit(params);
             });
 
+            // 锁定单位
+            if (this.currentUnitId) {
+              this.selectedUnit = this.units.get(this.currentUnitId);
+            }
             command = assumptionData;
             this.isCreated = true;
           }
@@ -1135,6 +1163,7 @@ export default {
         case "join":
           break;
         case "start":
+          this.startTime = new Date().getTime();
           this.isStarted = true;
           break;
         case "continue":
@@ -1157,7 +1186,7 @@ export default {
       // console.log("SEND_CMD：", command);
       console.log("SEND_CMD：", JSON.stringify(command));
       // todo: 捕获条件
-      const unitIds = ["202"];
+      const unitIds = [this.currentUnitId];
       // 记录指令
       if (
         command &&

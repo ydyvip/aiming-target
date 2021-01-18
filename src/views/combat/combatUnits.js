@@ -5,31 +5,51 @@ export const combatUnits = [
     name: "张晓北",
     type: "soldier",
     group: "reds",
-    position: { x: 7.17700650691599, y: 39.6322249875572 },
+    position: { x: 4.170640510838907, y: 55.643666383902655 },
     weapons: {
       main: "L85A1式突击步枪",
       sub: "贝雷塔M9手枪",
+      knife: "S37海豹突击队Knife2000匕首",
       other: ["M67手榴弹"]
     }
   },
   {
-    id: "105",
-    name: "陈建党",
+    id: "102",
+    name: "刘建国",
     type: "soldier",
     group: "reds",
-    position: { x: 3.5295679892706815, y: 67.00896452032798 },
-    weapons: { main: "M4A1突击步枪", sub: "贝雷塔M9手枪", other: ["M型手榴弹"] }
+    position: { x: 4.00176388549995, y: 58.571824208349064 },
+    weapons: {
+      main: "L85A1式突击步枪",
+      sub: "USP手枪",
+      knife: "KCB77艾克洪索尼根刺刀",
+      other: ["MB-502式发烟手榴弹"]
+    }
+  },
+  {
+    id: "103",
+    name: "刘建中",
+    type: "soldier",
+    group: "reds",
+    position: { x: 3.9033304327920333, y: 61.810542236142695 },
+    weapons: {
+      main: "M16式突击步枪",
+      sub: "USP手枪",
+      knife: "KCB77艾克洪索尼根刺刀",
+      other: ["MB-502式发烟手榴弹"]
+    }
   },
   {
     id: "112",
     name: "赵八一",
     type: "soldier",
     group: "reds",
-    position: { x: 3.037481421432518, y: 61.660529577182324 },
+    position: { x: 4.0226328071260395, y: 64.95312599186212 },
     weapons: {
-      main: "L85A1式突击步枪",
-      sub: "贝雷塔M9手枪",
-      other: ["MB-502式发烟手榴弹"]
+      main: "M4A1突击步枪",
+      sub: "西格&绍尔SIGP228手枪",
+      knife: "95式多用途刺刀",
+      other: ["M84眩晕手榴弹"]
     }
   },
   {
@@ -37,48 +57,26 @@ export const combatUnits = [
     name: "陈卫国",
     type: "soldier",
     group: "reds",
-    position: { x: 3.22690129432557, y: 56.32610940934873 },
+    position: { x: 3.8083424596178586, y: 67.55264662219119 },
     weapons: {
       main: "Mk11式7.62毫米狙击步枪",
-      sub: "西格&绍尔SIGP228手枪",
-      other: []
-    }
-  },
-  {
-    id: "115",
-    name: "谢维和",
-    type: "soldier",
-    group: "reds",
-    position: { x: 12.246273353040333, y: 39.721373200299986 },
-    weapons: {
-      main: "L85A1式突击步枪",
-      sub: "西格&绍尔SIGP228手枪",
-      other: ["M84眩晕手榴弹"]
+      sub: "贝雷塔M9手枪",
+      knife: "S37海豹突击队Knife2000匕首",
+      other: ["MB-502式发烟手榴弹"]
     }
   },
   // blue
-  {
-    id: "212",
-    name: "王爱国",
-    type: "soldier",
-    group: "blues",
-    position: { x: 98.95891495522147, y: 88.28518829254732 },
-    weapons: {
-      main: "L85A1式突击步枪",
-      sub: "贝雷塔M9手枪",
-      other: ["M型手榴弹"]
-    }
-  },
   {
     id: "201",
     name: "廖信忠",
     type: "soldier",
     group: "blues",
-    position: { x: 100.5317553750573, y: 43.69763247076627 },
+    position: { x: 124.649146180672, y: 49.36565471474885 },
     weapons: {
       main: "M4A1突击步枪",
-      sub: "西格&绍尔SIGP228手枪",
-      other: ["M型手榴弹"]
+      sub: "沙漠之鹰手枪",
+      knife: "KCB77艾克洪索尼根刺刀",
+      other: ["MB-502式发烟手榴弹"]
     }
   },
   {
@@ -86,11 +84,25 @@ export const combatUnits = [
     name: "蒋经纬",
     type: "soldier",
     group: "blues",
-    position: { x: 106.09732306547181, y: 23.49062491925224 },
+    position: { x: 124.7136005335113, y: 51.67685602753856 },
     weapons: {
-      main: "AK-47步枪",
+      main: "L85A1式突击步枪",
       sub: "贝雷塔M9手枪",
-      other: ["MB-502式发烟手榴弹"]
+      knife: "95式多用途刺刀",
+      other: ["M67手榴弹"]
+    }
+  },
+  {
+    id: "212",
+    name: "王爱国",
+    type: "soldier",
+    group: "blues",
+    position: { x: 124.88756260169501, y: 54.052301044873744 },
+    weapons: {
+      main: "M4A1突击步枪",
+      sub: "贝雷塔M9手枪",
+      knife: "S37海豹突击队Knife2000匕首",
+      other: ["M型手榴弹"]
     }
   },
   {
@@ -98,19 +110,25 @@ export const combatUnits = [
     name: "陈建忠",
     type: "soldier",
     group: "blues",
-    position: { x: 116.28571598704315, y: 12.567328027092303 },
+    position: { x: 124.94006942316251, y: 56.77192836638597 },
     weapons: {
-      main: "M16式突击步枪",
-      sub: "西格&绍尔SIGP228手枪",
-      other: ["M84眩晕手榴弹"]
+      main: "AK-47步枪",
+      sub: "贝雷塔M9手枪",
+      knife: "S37海豹突击队Knife2000匕首",
+      other: ["MB-502式发烟手榴弹"]
     }
   },
   {
-    id: "215",
-    name: "林胜利",
+    id: "206",
+    name: "康有为",
     type: "soldier",
     group: "blues",
-    position: { x: 120.13803784480939, y: 68.89108166009788 },
-    weapons: { main: "AK-47步枪", sub: "贝雷塔M9手枪", other: ["M型手榴弹"] }
+    position: { x: 125.17819156174968, y: 59.6989349183198 },
+    weapons: {
+      main: "SV98狙击步枪",
+      sub: "贝雷塔M9手枪",
+      knife: "S37海豹突击队Knife2000匕首",
+      other: ["M84眩晕手榴弹"]
+    }
   }
 ];
