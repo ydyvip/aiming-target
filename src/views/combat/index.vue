@@ -128,7 +128,7 @@
     </div>
 
     <ul class="c-logs">
-      <li v-for="(log, i) in reverseLogs" :key="i">
+      <li v-for="(log, i) in sortLogs" :key="i">
         {{ log }}
       </li>
     </ul>
@@ -220,8 +220,8 @@ export default {
     currentUnitId() {
       return this.$route.query.id || 0;
     },
-    reverseLogs() {
-      return this.logs.reverse();
+    sortLogs() {
+      return this.logs.sort((a, b) => a.timestamp - b.timestamp);
     },
     unitsConfig() {
       return this.formatUnitsData(combatUnits);
@@ -959,7 +959,14 @@ export default {
       let deathState = unit.getChildByName("deathState");
       let visualVector = unit.getChildByName("visualVector");
       let healthPointBar = unit.getChildByName("healthPointBar");
-      const { visualAngle, rotation, timestamp, hp } = data || {};
+      const {
+        visualAngle,
+        rotation,
+        timestamp,
+        hp,
+        weaponType,
+        ammunitionAmount
+      } = data || {};
 
       // 记录时间戳计算帧数
       const TIMEFRAME = timestamp - unit.timestamp || 0;
@@ -997,6 +1004,14 @@ export default {
         );
         unit.addChildAt(newHpContainer, 5);
         unit.hp = hp;
+      }
+
+      // 换弹匣
+      if (["PISTOL", "RIFLE"].includes(weaponType) && ammunitionAmount === 0) {
+        this.handleSendCommand("controls", {
+          id: unit.unitId,
+          cmd: "c2s_load_ammunition"
+        });
       }
 
       // HP状态处理
@@ -1082,6 +1097,7 @@ export default {
 
             break;
           case "s2c_attack":
+            // 触发攻击
             this.triggerAction("Attack", unit, data);
             break;
           // 被攻击
@@ -1184,9 +1200,9 @@ export default {
 
     pushLog(info) {
       if (this.logs.length > this.logMax) {
-        this.logs = this.logs.splice(-this.logMax + 1);
+        this.logs = this.logs.splice(0, this.logMax);
       }
-      this.logs.push(info);
+      this.logs.unshift(info);
     },
 
     // 切换开始对抗
