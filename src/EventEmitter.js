@@ -17,6 +17,8 @@ const EventType = {
   CREATE: "create",
   // 加入房间
   JOIN: "join",
+  // 推演加速
+  SPEED: "speed",
   // 单兵态势
   ACTORSTATE: "actorState",
   // 范围视野范围内敌人

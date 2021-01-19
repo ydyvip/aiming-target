@@ -40,6 +40,10 @@ socketMap.on("join", data => {
   emitter.emit(EventType.JOIN, data);
 });
 
+socketMap.on("speed", data => {
+  emitter.emit(EventType.SPEED, data);
+});
+
 // 单兵态势
 socketMap.on("actorState", data => {
   emitter.emit(EventType.ACTORSTATE, data);

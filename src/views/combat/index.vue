@@ -10,13 +10,17 @@
       style="border:1px solid #e1e1e1;"
       @contextmenu.prevent
     ></canvas>
-    <p>当前选中单位:{{ selectedUnit }}</p>
     <p>
-      指令总数:{{ actionRecords.length }}；&emsp;已播放指令:{{
+      当前选中单位:{{ selectedUnit }};&emsp;行为堆栈:{{
+        behaviorStack | behaviorFilter
+      }}
+    </p>
+    <p>
+      指令总数:{{ actionRecords.length }};&emsp;已播放指令:{{
         cmdPlayedRecords.length
-      }}；&emsp;栈存指令:{{ cmdStackRecords.length }}；&emsp;坐标:{{
-        "X:" + parseCoodination(selectedUnit.x)
-      }}&emsp;{{ "Y:" + parseCoodination(selectedUnit.y) }}
+      }};&emsp;栈存指令:{{ cmdStackRecords.length }};&emsp;坐标:X:{{
+        selectedUnit.x | scaleFilter
+      }}&emsp;Y:{{ selectedUnit.y | scaleFilter }}
     </p>
     <div class="c-controls">
       <input
@@ -29,9 +33,9 @@
       <input
         class="btn"
         type="button"
-        value="开始对抗"
-        :disabled="isStarted"
-        @click="handleSendCommand('start')"
+        :disabled="isPlayed"
+        :value="!isStarted ? '开始对抗' : `当前${timeSpeed}倍速`"
+        @click="handleSwitchStart()"
       />
       <input
         class="btn"
@@ -115,6 +119,12 @@
         value="输出历史"
         @click="handleExportRecords()"
       />
+      <input
+        class="btn"
+        type="button"
+        :value="'行为' + (openBehavior ? '开' : '关')"
+        @click="openBehavior = !openBehavior"
+      />
     </div>
 
     <ul class="c-logs">
@@ -154,6 +164,8 @@ const STATUSINDEX = {
   c2s_carry: "手持"
 };
 
+const TIMESPEEDSCALES = [1, 2, 4, 8]; // 加速等级
+
 export default {
   name: "Combat",
   data() {
@@ -164,6 +176,8 @@ export default {
       isPlayed: false, // 是否播放脚本
       isPaused: false, // 是否暂停
       stage: null,
+
+      openBehavior: false, // 是否执行行为
       // 选中的unit
       selectedUnit: {
         unitId: null,
@@ -185,12 +199,14 @@ export default {
       units: new Map(),
       logs: [], // 日志内容
       logMax: 8,
+      behaviorStack: [], // 行为指令栈存
 
       // todo: test properties
       waypointsLine: null,
       currentCmd: null,
       currentAssumpId: null,
 
+      timeSpeed: 1, // 推演速度
       startTime: 0, // 开始时间节点
       duringTime: 0, // 播放经过时间
 
@@ -211,7 +227,26 @@ export default {
       return this.formatUnitsData(combatUnits);
     }
   },
-
+  filters: {
+    // 比例解析
+    scaleFilter(num) {
+      return num / mapScale;
+    },
+    // 行为解析
+    behaviorFilter(behaviors) {
+      return behaviors.map(({ id, type, targetId, finished }) => {
+        if (id) {
+          let info = `${id}: Idling`;
+          switch (type) {
+            case "Attack":
+              info = `${id}: Attacking enermy ${targetId}`;
+              break;
+          }
+          return info;
+        }
+      });
+    }
+  },
   watch: {
     units: {
       handler(newVal) {},
@@ -593,6 +628,7 @@ export default {
 
       // 绘制名字
       const unitNameWidth = (strLength(unitName + unitId) / 2) * 12;
+
       // 当前持枪状态
       unitContainer.unitNameWidth = unitNameWidth;
       const unitLabel = this.drawText(
@@ -682,17 +718,21 @@ export default {
     },
 
     // 触发动作
-    triggerAction(name, unit, data, interval = 0) {
-      setTimeout(() => {
-        this[`action${name}ing`](unit, data);
-      }, interval);
+    triggerAction(type, unit, data, interval = 0) {
+      switch (type) {
+        case "Attack":
+          setTimeout(() => {
+            this.actionAttacking(unit, data);
+          }, interval);
+          break;
+      }
     },
 
     // 攻击
     actionAttacking(
       unit,
       { attackRotation, attackDistance } = {
-        attackRotation: 100,
+        attackRotation: 0,
         attackDistance: 80
       }
     ) {
@@ -707,6 +747,9 @@ export default {
 
       // 攻击线加入容器
       unit.addChild(aimingTo);
+      // 攻击偏转角
+      aimingTo.rotation = attackRotation;
+      // 销毁攻击
       setTimeout(() => {
         unit.removeChild(aimingTo);
       }, 100);
@@ -827,7 +870,7 @@ export default {
     syncSocket() {
       // 单兵态势
       emitter.on(EventType.ACTORSTATE, data => {
-        this.pushLog({ "ACTORSTATE_INFO：": data });
+        // this.pushLog({ "ACTORSTATE_INFO：": data });
         let currentUnit = this.units.get(data.id);
         this.actionsProcessing(currentUnit, data);
       });
@@ -835,8 +878,8 @@ export default {
       // 范围视野范围内敌人
       emitter.on(EventType.VIEWENEMY, data => {
         this.pushLog({ "VIEWENEMY_INFO：": data });
-        // let currentUnit = this.units.get(data.id);
-        // this.actionsProcessing(currentUnit, data);
+        let currentUnit = this.units.get(data.id);
+        this.behaviorsProcessing(currentUnit, data);
       });
 
       // 武器行为
@@ -852,6 +895,63 @@ export default {
         let currentUnit = this.units.get(data.id);
         this.actionsProcessing(currentUnit, data);
       });
+    },
+
+    // 行为解析
+    behaviorsProcessing(unit, data) {
+      const { id, cmd, actors } = data || {};
+      const interval = 300;
+
+      // 按指令类型处理
+      switch (cmd) {
+        case "s2c_enemy":
+          if (actors.length) {
+            // 创建攻击行为
+            const aThink = {
+              id,
+              type: "Attack",
+              targetId: actors[0].id,
+              data: setInterval(() => {
+                // 是否执行行为
+                if (!this.openBehavior) return;
+                this.handleSendCommand("controls", {
+                  id: unit.unitId,
+                  cmd: "c2s_attack"
+                });
+              }, interval),
+              clean: () => {
+                console.warn("cleanBehavior", aThink);
+                clearInterval(aThink.data);
+                aThink.finished = true;
+              },
+              finished: false
+            };
+            // 存储行为
+            this.behaviorStack.push(aThink);
+          } else {
+            // 释放行为
+            this.releaseBehavior(
+              think => think.id === id && think.type === "Attack"
+            );
+          }
+        default:
+          // 再清除行为
+          this.cleanBehavior(think => think.finished);
+      }
+    },
+
+    // 释放行为
+    releaseBehavior(condition) {
+      this.behaviorStack.filter(condition).forEach(think => {
+        think.clean();
+      });
+    },
+
+    // 清除行为
+    cleanBehavior(condition) {
+      this.behaviorStack = this.behaviorStack.filter(
+        think => !condition(think)
+      );
     },
 
     // 动作解析
@@ -937,7 +1037,7 @@ export default {
 
     // cmdProcessor
     cmdProcessor(unit, data, TIMEFRAME) {
-      const { id, cmd, x, y, rotation, consumerTime = 100 } = data || {};
+      const { id, cmd, x, y, rotation, hp, consumerTime = 100 } = data || {};
       // 创建补间对象
       const tween = createjs.Tween.get(unit, {
         loop: false,
@@ -952,15 +1052,21 @@ export default {
           case "s2c_move_start":
           case "s2c_move_end":
             // 创建补间动画
+            // if (TIMEFRAME === 0) {
+            // unit.x = x * mapScale;
+            // unit.y = y * mapScale;
+            // unit.rotation = this.parseRotating(unit, rotation);
+            // } else {
+            unit.rotation = this.parseRotating(unit, rotation);
             tween.to(
               {
                 x: x * mapScale,
-                y: y * mapScale,
-                rotation: this.parseRotating(unit, rotation)
+                y: y * mapScale
               },
               TIMEFRAME,
               createjs.Ease.linear
             );
+            // }
 
             break;
           case "s2c_rotation":
@@ -977,6 +1083,18 @@ export default {
             break;
           case "s2c_attack":
             this.triggerAction("Attack", unit, data);
+            break;
+          // 被攻击
+          case "s2c_attacked":
+            if (hp === 0) {
+              // 清除锁定行为(自己的和别人的)
+              this.releaseBehavior(
+                think => think.id === id || think.targetId === id
+              );
+              this.cleanBehavior(
+                think => think.id === id || think.targetId === id
+              );
+            }
             break;
         }
       }
@@ -1051,12 +1169,14 @@ export default {
 
     // todo: 播放
     handlePlayActors() {
+      const timeSpeed = this.timeSpeed;
       if (!this.isPlayed) {
         this.startTime = new Date().getTime();
-        this.savingActions();
+        this.savingActions(frame => (frame.TIMEFRAME /= timeSpeed));
         this.isPlayed = true;
       }
     },
+
     // todo: 导出记录
     handleExportRecords() {
       console.warn("History_Records:", JSON.stringify(this.cmdHistoryRecords));
@@ -1069,9 +1189,25 @@ export default {
       this.logs.push(info);
     },
 
-    parseCoodination(num) {
-      return num / mapScale;
+    // 切换开始对抗
+    handleSwitchStart() {
+      if (this.isStarted) {
+        let currentScaleIndex =
+          TIMESPEEDSCALES.indexOf(this.timeSpeed) % TIMESPEEDSCALES.length;
+
+        if (TIMESPEEDSCALES.length - 1 === currentScaleIndex)
+          currentScaleIndex = 0;
+        else currentScaleIndex++;
+        this.timeSpeed = TIMESPEEDSCALES[currentScaleIndex];
+        this.handleSendCommand("speed", {
+          speed: this.timeSpeed
+        });
+      } else {
+        this.handleSendCommand("start");
+      }
     },
+
+    // 切换武器
     handleSwitchWeapon() {
       this.selectedUnit.weaponIndex =
         ((this.selectedUnit.weaponIndex || 0) + 1) %
@@ -1084,6 +1220,8 @@ export default {
         weapon_index
       });
     },
+
+    // 切换姿态
     handleSwitchStatus() {
       let status = this.selectedUnit.status;
       switch (status) {
@@ -1102,6 +1240,7 @@ export default {
         cmd: this.selectedUnit.status
       });
     },
+    // 切换播放和暂停
     handleSwitchPlaying() {
       // 定义变量
       const status = this.isPaused ? "continue" : "pause";
@@ -1151,6 +1290,8 @@ export default {
               // 绘制单位
               this.paintingUnit(params);
             });
+            // 推演速度
+            assumptionData.initData.timeSpeed = this.timeSpeed;
 
             // 锁定单位
             if (this.currentUnitId) {
@@ -1173,16 +1314,16 @@ export default {
       }
 
       // 按指令类型处理
-      if (command && command.cmd) {
-        switch (command.cmd) {
-          case "c2s_switch_weapon":
-            break;
-          case "c2s_aim":
-            break;
-          case "c2s_carry":
-            break;
-        }
-      }
+      // if (command && command.cmd) {
+      //   switch (command.cmd) {
+      //     case "c2s_switch_weapon":
+      //       break;
+      //     case "c2s_aim":
+      //       break;
+      //     case "c2s_carry":
+      //       break;
+      //   }
+      // }
       // console.log("SEND_CMD：", command);
       console.log("SEND_CMD：", JSON.stringify(command));
       // todo: 捕获条件
@@ -1209,7 +1350,7 @@ export default {
 
       // 发送指令
       socketMap.emit(eventName, command, res => {
-        console.log("SEND_RETURN：", res);
+        // console.log("SEND_RETURN：", res);
         const { object } = res || {};
         const { reds, blues } = object || {};
         // 处理已发送的记录指令
