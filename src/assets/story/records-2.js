@@ -54,15 +54,9 @@ export const actionRecords = [
     TIMEFRAME: 53326,
     id: "101",
     cmd: "c2s_move",
-    position: { x: 66, y: 23.8 }
+    position: { x: 66.4, y: 24.6 }
   },
-  {
-    TIMEFRAME: 63666,
-    id: "101",
-    cmd: "c2s_rotation",
-    direct: 1,
-    angle: 46.49433359126655
-  },
+
   {
     TIMEFRAME: 67456,
     id: "101",
@@ -81,100 +75,95 @@ export const actionRecords = [
     TIMEFRAME: 80181,
     id: "101",
     cmd: "c2s_move",
-    position: { x: 66.1, y: 24.2 }
-  },
-  {
-    TIMEFRAME: 84633,
-    id: "101",
-    cmd: "c2s_move",
-    position: { x: 67.5, y: 26.9 }
+    position: { x: 66.4, y: 24.6 }
   },
   {
     TIMEFRAME: 88694,
     id: "101",
     cmd: "c2s_rotation",
-    direct: 1,
-    angle: 269.26074064459215
-  },
-  { TIMEFRAME: 89914, id: "101", cmd: "c2s_attack" },
-  { TIMEFRAME: 91793, id: "101", cmd: "c2s_attack" },
-  // 第三阶段
-  {
-    TIMEFRAME: 92167,
-    id: "101",
-    cmd: "c2s_move",
-    position: { x: 66, y: 23.5 }
-  },
-  {
-    TIMEFRAME: 94625,
-    id: "101",
-    cmd: "c2s_rotation",
-    direct: 1,
-    angle: 170.65102241071804
-  },
-  {
-    TIMEFRAME: 130134,
-    id: "101",
-    cmd: "c2s_rotation",
     direct: 0,
-    angle: 28.88978390067541
-  },
-  {
-    TIMEFRAME: 135815,
-    id: "101",
-    cmd: "c2s_move",
-    position: { x: 69.4, y: 27.4 }
-  },
-  {
-    TIMEFRAME: 137937,
-    id: "101",
-    cmd: "c2s_rotation",
-    direct: 0,
-    angle: 38.736453173740614
-  },
-  {
-    TIMEFRAME: 138992,
-    id: "101",
-    cmd: "c2s_rotation",
-    direct: 0,
-    angle: 43.781124764873084
+    angle: 28
   },
 
-  { TIMEFRAME: 140779, id: "101", cmd: "c2s_attack" },
+  // { TIMEFRAME: 89914, id: "101", cmd: "c2s_attack" },
+  // { TIMEFRAME: 91793, id: "101", cmd: "c2s_attack" },
+  // 第三阶段
+  // {
+  //   TIMEFRAME: 92167,
+  //   id: "101",
+  //   cmd: "c2s_move",
+  //   position: { x: 66.4, y: 24.6 }
+  // },
+  // {
+  //   TIMEFRAME: 94625,
+  //   id: "101",
+  //   cmd: "c2s_rotation",
+  //   direct: 1,
+  //   angle: 170.65102241071804
+  // },
+  // {
+  //   TIMEFRAME: 130134,
+  //   id: "101",
+  //   cmd: "c2s_rotation",
+  //   direct: 0,
+  //   angle: 28.88978390067541
+  // },
+  // {
+  //   TIMEFRAME: 135815,
+  //   id: "101",
+  //   cmd: "c2s_move",
+  //   position: { x: 69.4, y: 27.4 }
+  // },
+  // {
+  //   TIMEFRAME: 137937,
+  //   id: "101",
+  //   cmd: "c2s_rotation",
+  //   direct: 0,
+  //   angle: 38.736453173740614
+  // },
+  // {
+  //   TIMEFRAME: 138992,
+  //   id: "101",
+  //   cmd: "c2s_rotation",
+  //   direct: 0,
+  //   angle: 43.781124764873084
+  // },
+
+  // { TIMEFRAME: 140779, id: "101", cmd: "c2s_attack" },
+  // {
+  //   TIMEFRAME: 142059,
+  //   id: "101",
+  //   cmd: "c2s_move",
+  //   position: { x: 66.4, y: 24.6 }
+  // },
+  // {
+  //   TIMEFRAME: 143865,
+  //   id: "101",
+  //   cmd: "c2s_move",
+  //   position: { x: 65.9, y: 23.9 }
+  // },
+  // {
+  //   TIMEFRAME: 148224,
+  //   id: "101",
+  //   cmd: "c2s_rotation",
+  //   direct: 1,
+  //   angle: 106.3230462290607
+  // },
   {
-    TIMEFRAME: 142059,
-    id: "101",
-    cmd: "c2s_move",
-    position: { x: 66, y: 27.4 }
-  },
-  {
-    TIMEFRAME: 143865,
-    id: "101",
-    cmd: "c2s_move",
-    position: { x: 65.9, y: 23.9 }
-  },
-  {
-    TIMEFRAME: 148224,
-    id: "101",
-    cmd: "c2s_rotation",
-    direct: 1,
-    angle: 106.3230462290607
-  },
-  {
-    TIMEFRAME: 160556,
+    TIMEFRAME: 145556,
     id: "101",
     cmd: "c2s_move",
     position: { x: 66.1, y: 11.7 }
   },
   {
-    TIMEFRAME: 166442,
+    TIMEFRAME: 151442,
     id: "101",
     cmd: "c2s_rotation",
     direct: 1,
     angle: 411.09900499294395
   },
   {
-    TIMEFRAME: 168032,
+    TIMEFRAME: 153032,
     id: "101",
     cmd: "c2s_rotation",
     direct: 1,
@@ -182,34 +171,34 @@ export const actionRecords = [
   },
   // 第四阶段
   {
-    TIMEFRAME: 170880,
+    TIMEFRAME: 155880,
     id: "101",
     cmd: "c2s_move",
-    position: { x: 70.3, y: 9 }
+    position: { x: 66.6, y: 11 }
   },
   {
-    TIMEFRAME: 174317,
+    TIMEFRAME: 168317,
     id: "101",
     cmd: "c2s_move",
-    position: { x: 102.8, y: 9.6 }
+    position: { x: 102.9, y: 9.8 }
   },
   {
-    TIMEFRAME: 189937,
+    TIMEFRAME: 183937,
     id: "101",
     cmd: "c2s_rotation",
     direct: 1,
-    angle: 62.16404231200377
+    angle: 50.16404231200377
   },
   // 第五阶段
   {
-    TIMEFRAME: 197416,
+    TIMEFRAME: 191416,
     id: "101",
     cmd: "c2s_move",
-    position: { x: 116.6, y: 14.2 }
+    position: { x: 117.4, y: 13.9 }
   },
   // 占领敌方据点
   {
-    TIMEFRAME: 203825,
+    TIMEFRAME: 197825,
     id: "101",
     cmd: "c2s_move",
     position: { x: 121.4, y: 52.7 }
@@ -259,7 +248,7 @@ export const actionRecords = [
     position: { x: 59.9, y: 32.3 }
   },
   {
-    TIMEFRAME: 71267,
+    TIMEFRAME: 70267,
     id: "102",
     cmd: "c2s_rotation",
     direct: 1,
@@ -267,40 +256,40 @@ export const actionRecords = [
   },
   // 第二阶段
   {
-    TIMEFRAME: 71884,
+    TIMEFRAME: 70884,
     id: "102",
     cmd: "c2s_move",
     position: { x: 75, y: 47.8 }
   },
   {
-    TIMEFRAME: 80992,
+    TIMEFRAME: 79992,
     id: "102",
     cmd: "c2s_move",
     position: { x: 72.7, y: 50.7 }
   },
   {
-    TIMEFRAME: 83480,
+    TIMEFRAME: 82480,
     id: "102",
     cmd: "c2s_move",
     position: { x: 74.6, y: 60.3 }
   },
-  { TIMEFRAME: 84629, id: "102", cmd: "c2s_attack" },
+  { TIMEFRAME: 83629, id: "102", cmd: "c2s_attack" },
   {
-    TIMEFRAME: 85057,
+    TIMEFRAME: 84057,
     id: "102",
     cmd: "c2s_move",
     position: { x: 75.7, y: 59.9 }
   },
-  { TIMEFRAME: 85717, id: "102", cmd: "c2s_attack" },
+  { TIMEFRAME: 84717, id: "102", cmd: "c2s_attack" },
   // 第三阶段
   {
-    TIMEFRAME: 96296,
+    TIMEFRAME: 95296,
     id: "102",
     cmd: "c2s_move",
-    position: { x: 76.2, y: 53.1 }
+    position: { x: 76.7, y: 51.6 }
   },
   {
-    TIMEFRAME: 100536,
+    TIMEFRAME: 99536,
     id: "102",
     cmd: "c2s_rotation",
     direct: 1,
@@ -456,23 +445,17 @@ export const actionRecords = [
     position: { x: 56.4, y: 68.3 }
   },
   {
-    TIMEFRAME: 31634,
+    TIMEFRAME: 30634,
     id: "112",
     cmd: "c2s_move",
     position: { x: 53.9, y: 70.7 }
   },
-  {
-    TIMEFRAME: 35491,
-    id: "112",
-    cmd: "c2s_rotation",
-    direct: 1,
-    angle: 52.8233982348022
-  },
+
   {
     TIMEFRAME: 37426,
     id: "112",
     cmd: "c2s_move",
-    position: { x: 59.4, y: 89.7 }
+    position: { x: 59.4, y: 90.7 }
   },
   {
     TIMEFRAME: 50977,
@@ -483,20 +466,27 @@ export const actionRecords = [
   },
   // 第二阶段
   {
-    TIMEFRAME: 75003,
+    TIMEFRAME: 81003,
     id: "112",
     cmd: "c2s_move",
-    position: { x: 76, y: 90.4 }
+    position: { x: 76, y: 91.4 }
   },
-  { TIMEFRAME: 78900, id: "112", cmd: "c2s_attack" },
-  { TIMEFRAME: 81413, id: "112", cmd: "c2s_attack" },
+  { TIMEFRAME: 82900, id: "112", cmd: "c2s_attack" },
+  { TIMEFRAME: 84413, id: "112", cmd: "c2s_attack" },
   {
-    TIMEFRAME: 85403,
+    TIMEFRAME: 886735,
     id: "112",
     cmd: "c2s_rotation",
     direct: 1,
-    angle: 80.07780652866884
+    angle: 40.69843463234682
   },
+  // {
+  //   TIMEFRAME: 85403,
+  //   id: "112",
+  //   cmd: "c2s_rotation",
+  //   direct: 1,
+  //   angle: 80.07780652866884
+  // },
   // 第四阶段
   {
     TIMEFRAME: 123292,
@@ -554,7 +544,7 @@ export const actionRecords = [
     TIMEFRAME: 32321,
     id: "113",
     cmd: "c2s_move",
-    position: { x: 50.3, y: 52.8 }
+    position: { x: 51.2, y: 51.4 }
   },
   {
     TIMEFRAME: 42472,
@@ -564,65 +554,65 @@ export const actionRecords = [
     angle: 416.07880425622864
   },
   // 第二阶段
-  {
-    TIMEFRAME: 78376,
-    id: "113",
-    cmd: "c2s_move",
-    position: { x: 53.4, y: 49.1 }
-  },
+  // {
+  //   TIMEFRAME: 78376,
+  //   id: "113",
+  //   cmd: "c2s_move",
+  //   position: { x: 53.4, y: 49.1 }
+  // },
 
-  {
-    TIMEFRAME: 82496,
-    id: "113",
-    cmd: "c2s_rotation",
-    direct: 1,
-    angle: 410
-  },
-  { TIMEFRAME: 83071, id: "113", cmd: "c2s_aim" },
-  { TIMEFRAME: 88233, id: "113", cmd: "c2s_attack" },
-  { TIMEFRAME: 92233, id: "113", cmd: "c2s_attack" },
+  // {
+  //   TIMEFRAME: 82496,
+  //   id: "113",
+  //   cmd: "c2s_rotation",
+  //   direct: 1,
+  //   angle: 410
+  // },
+  // { TIMEFRAME: 83071, id: "113", cmd: "c2s_aim" },
+  // { TIMEFRAME: 88233, id: "113", cmd: "c2s_attack" },
+  // { TIMEFRAME: 92233, id: "113", cmd: "c2s_attack" },
   // 第三阶段
-  { TIMEFRAME: 95642, id: "113", cmd: "c2s_carry" },
-  {
-    TIMEFRAME: 97348,
-    id: "113",
-    cmd: "c2s_move",
-    position: { x: 51.1, y: 52.1 }
-  },
-  {
-    TIMEFRAME: 100023,
-    id: "113",
-    cmd: "c2s_rotation",
-    direct: 1,
-    angle: 175.04972776570753
-  },
+  // { TIMEFRAME: 95642, id: "113", cmd: "c2s_carry" },
+  // {
+  //   TIMEFRAME: 97348,
+  //   id: "113",
+  //   cmd: "c2s_move",
+  //   position: { x: 51.1, y: 52.1 }
+  // },
+  // {
+  //   TIMEFRAME: 100023,
+  //   id: "113",
+  //   cmd: "c2s_rotation",
+  //   direct: 1,
+  //   angle: 175.04972776570753
+  // },
   // 第四阶段
   {
-    TIMEFRAME: 137825,
+    TIMEFRAME: 122825,
     id: "113",
     cmd: "c2s_move",
     position: { x: 51.1, y: 42 }
   },
   {
-    TIMEFRAME: 142782,
+    TIMEFRAME: 127782,
     id: "113",
     cmd: "c2s_move",
     position: { x: 52, y: 28.2 }
   },
   {
-    TIMEFRAME: 149708,
+    TIMEFRAME: 134708,
     id: "113",
     cmd: "c2s_move",
     position: { x: 53.4, y: 15.9 }
   },
   {
-    TIMEFRAME: 156147,
+    TIMEFRAME: 141147,
     id: "113",
     cmd: "c2s_move",
     position: { x: 66.3, y: 11.2 }
   },
   {
-    TIMEFRAME: 164123,
+    TIMEFRAME: 149123,
     id: "113",
     cmd: "c2s_rotation",
     direct: 1,
@@ -630,54 +620,54 @@ export const actionRecords = [
   },
   // 第五阶段
   {
-    TIMEFRAME: 167569,
+    TIMEFRAME: 152569,
     id: "113",
     cmd: "c2s_move",
-    position: { x: 103, y: 9.6 }
+    position: { x: 103.4, y: 9.4 }
   },
+  // {
+  //   TIMEFRAME: 180405,
+  //   id: "113",
+  //   cmd: "c2s_move",
+  //   position: { x: 106, y: 10.2 }
+  // },
+  // {
+  //   TIMEFRAME: 185442,
+  //   id: "113",
+  //   cmd: "c2s_move",
+  //   position: { x: 110, y: 10.9 }
+  // },
   {
-    TIMEFRAME: 180405,
-    id: "113",
-    cmd: "c2s_move",
-    position: { x: 106, y: 10.2 }
-  },
-  {
-    TIMEFRAME: 185442,
-    id: "113",
-    cmd: "c2s_move",
-    position: { x: 110, y: 10.9 }
-  },
-  {
-    TIMEFRAME: 189777,
+    TIMEFRAME: 174777,
     id: "113",
     cmd: "c2s_rotation",
     direct: 1,
-    angle: 101.59875896997531
+    angle: 43.53691939358984
   },
 
-  { TIMEFRAME: 192886, id: "113", cmd: "c2s_aim" },
-  { TIMEFRAME: 195500, id: "113", cmd: "c2s_attack" },
+  { TIMEFRAME: 175886, id: "113", cmd: "c2s_aim" },
+  { TIMEFRAME: 180500, id: "113", cmd: "c2s_attack" },
 
-  { TIMEFRAME: 201361, id: "113", cmd: "c2s_carry" },
+  { TIMEFRAME: 186361, id: "113", cmd: "c2s_carry" },
   {
-    TIMEFRAME: 203003,
+    TIMEFRAME: 188003,
     id: "113",
     cmd: "c2s_move",
     position: { x: 116.9, y: 13.6 }
   },
   {
-    TIMEFRAME: 207211,
+    TIMEFRAME: 192211,
     id: "113",
     cmd: "c2s_move",
-    position: { x: 120.5, y: 16.3 }
+    position: { x: 117.4, y: 14.2 }
   },
 
   {
-    TIMEFRAME: 210289,
+    TIMEFRAME: 195289,
     id: "113",
     cmd: "c2s_rotation",
     direct: 1,
-    angle: 97.61854648756841
+    angle: 60.53854648756841
   },
   /** blues */
 
@@ -727,7 +717,6 @@ export const actionRecords = [
     cmd: "c2s_move",
     position: { x: 98.4, y: 32.1 }
   },
-  // 第五阶段
   {
     TIMEFRAME: 114222,
     id: "201",
@@ -735,45 +724,47 @@ export const actionRecords = [
     direct: 1,
     angle: 132.36285657073802
   },
-  { TIMEFRAME: 129882, id: "201", cmd: "c2s_attack" },
-  {
-    TIMEFRAME: 158286,
-    id: "201",
-    cmd: "c2s_move",
-    position: { x: 93.8, y: 29.6 }
-  },
+  // 第五阶段
 
-  { TIMEFRAME: 161577, id: "201", cmd: "c2s_attack" },
-  { TIMEFRAME: 163739, id: "201", cmd: "c2s_attack" },
-  {
-    TIMEFRAME: 166439,
-    id: "201",
-    cmd: "c2s_move",
-    position: { x: 98.7, y: 32.9 }
-  },
-  {
-    TIMEFRAME: 171376,
-    id: "201",
-    cmd: "c2s_rotation",
-    direct: 1,
-    angle: 173.79515797257207
-  },
-  {
-    TIMEFRAME: 176273,
-    id: "201",
-    cmd: "c2s_rotation",
-    direct: 1,
-    angle: 452.8601917091621
-  },
+  // { TIMEFRAME: 129882, id: "201", cmd: "c2s_attack" },
+  // {
+  //   TIMEFRAME: 158286,
+  //   id: "201",
+  //   cmd: "c2s_move",
+  //   position: { x: 93.8, y: 29.6 }
+  // },
+
+  // { TIMEFRAME: 161577, id: "201", cmd: "c2s_attack" },
+  // { TIMEFRAME: 163739, id: "201", cmd: "c2s_attack" },
+  // {
+  //   TIMEFRAME: 166439,
+  //   id: "201",
+  //   cmd: "c2s_move",
+  //   position: { x: 98.7, y: 32.9 }
+  // },
+  // {
+  //   TIMEFRAME: 171376,
+  //   id: "201",
+  //   cmd: "c2s_rotation",
+  //   direct: 1,
+  //   angle: 173.79515797257207
+  // },
+  // {
+  //   TIMEFRAME: 176273,
+  //   id: "201",
+  //   cmd: "c2s_rotation",
+  //   direct: 1,
+  //   angle: 452.8601917091621
+  // },
 
   {
-    TIMEFRAME: 191239,
+    TIMEFRAME: 168836,
     id: "201",
     cmd: "c2s_move",
-    position: { x: 106.7, y: 30.4 }
+    position: { x: 118.9, y: 15.2 }
   },
   // 被红E击毙
-  { TIMEFRAME: 195500, id: "201", cmd: "c2s_hp", decrHp: 100 },
+  { TIMEFRAME: 180500, id: "201", cmd: "c2s_hp", decrHp: 100 },
 
   /** 202蒋经纬 蓝B */
   // 武器就绪
@@ -810,40 +801,40 @@ export const actionRecords = [
     TIMEFRAME: 26608,
     id: "202",
     cmd: "c2s_move",
-    position: { x: 105.2, y: 23.7 }
+    position: { x: 105, y: 24.8 }
   },
   {
-    TIMEFRAME: 33199,
+    TIMEFRAME: 34199,
     id: "202",
     cmd: "c2s_rotation",
     direct: 1,
     angle: 49.34135224150225
   },
   // 第三阶段
-  {
-    TIMEFRAME: 93711,
-    id: "202",
-    cmd: "c2s_move",
-    position: { x: 100.3, y: 27.7 }
-  },
-  {
-    TIMEFRAME: 96690,
-    id: "202",
-    cmd: "c2s_rotation",
-    direct: 1,
-    angle: 10.732566923430738
-  },
-  {
-    TIMEFRAME: 97850,
-    id: "202",
-    cmd: "c2s_rotation",
-    direct: 1,
-    angle: 8.946157978259464
-  },
-  { TIMEFRAME: 98594, id: "202", cmd: "c2s_attack" },
-  { TIMEFRAME: 99982, id: "202", cmd: "c2s_attack" },
-  { TIMEFRAME: 104857, id: "202", cmd: "c2s_attack" },
-  { TIMEFRAME: 109729, id: "202", cmd: "c2s_attack" },
+  // {
+  //   TIMEFRAME: 93711,
+  //   id: "202",
+  //   cmd: "c2s_move",
+  //   position: { x: 100.3, y: 27.7 }
+  // },
+  // {
+  //   TIMEFRAME: 96690,
+  //   id: "202",
+  //   cmd: "c2s_rotation",
+  //   direct: 1,
+  //   angle: 10.732566923430738
+  // },
+  // {
+  //   TIMEFRAME: 97850,
+  //   id: "202",
+  //   cmd: "c2s_rotation",
+  //   direct: 1,
+  //   angle: 8.946157978259464
+  // },
+  // { TIMEFRAME: 98594, id: "202", cmd: "c2s_attack" },
+  // { TIMEFRAME: 99982, id: "202", cmd: "c2s_attack" },
+  // { TIMEFRAME: 104857, id: "202", cmd: "c2s_attack" },
+  // { TIMEFRAME: 109729, id: "202", cmd: "c2s_attack" },
   {
     TIMEFRAME: 114981,
     id: "202",
@@ -866,21 +857,7 @@ export const actionRecords = [
     TIMEFRAME: 120601,
     id: "202",
     cmd: "c2s_move",
-    position: { x: 98.5, y: 45.4 }
-  },
-  {
-    TIMEFRAME: 122644,
-    id: "202",
-    cmd: "c2s_rotation",
-    direct: 1,
-    angle: 46.65828016515235
-  },
-  {
-    TIMEFRAME: 124411,
-    id: "202",
-    cmd: "c2s_rotation",
-    direct: 1,
-    angle: 64.26127296265042
+    position: { x: 97.9, y: 45.9 }
   },
   {
     TIMEFRAME: 128829,
@@ -922,7 +899,7 @@ export const actionRecords = [
     position: { x: 78.8, y: 64.1 }
   },
   {
-    TIMEFRAME: 27464,
+    TIMEFRAME: 28864,
     id: "212",
     cmd: "c2s_rotation",
     direct: 1,
@@ -933,10 +910,10 @@ export const actionRecords = [
     TIMEFRAME: 30167,
     id: "212",
     cmd: "c2s_move",
-    position: { x: 74.2, y: 53 }
+    position: { x: 74, y: 51.7 }
   },
   {
-    TIMEFRAME: 37154,
+    TIMEFRAME: 38554,
     id: "212",
     cmd: "c2s_rotation",
     direct: 1,
@@ -946,7 +923,7 @@ export const actionRecords = [
     TIMEFRAME: 41086,
     id: "212",
     cmd: "c2s_move",
-    position: { x: 78.6, y: 63.9 }
+    position: { x: 78.5, y: 64 }
   },
   {
     TIMEFRAME: 47892,
@@ -955,40 +932,49 @@ export const actionRecords = [
     direct: 1,
     angle: 203.33220916020704
   },
-  {
-    TIMEFRAME: 51117,
-    id: "212",
-    cmd: "c2s_rotation",
-    direct: 1,
-    angle: 235.8769274107421
-  },
-  { TIMEFRAME: 52499, id: "212", cmd: "c2s_attack" },
-  {
-    TIMEFRAME: 54743,
-    id: "212",
-    cmd: "c2s_rotation",
-    direct: 1,
-    angle: 120.20841757063369
-  },
+  // {
+  //   TIMEFRAME: 51117,
+  //   id: "212",
+  //   cmd: "c2s_rotation",
+  //   direct: 1,
+  //   angle: 235.8769274107421
+  // },
+  // { TIMEFRAME: 52499, id: "212", cmd: "c2s_attack" },
+  // {
+  //   TIMEFRAME: 54743,
+  //   id: "212",
+  //   cmd: "c2s_rotation",
+  //   direct: 1,
+  //   angle: 120.20841757063369
+  // },
   {
     TIMEFRAME: 58487,
     id: "212",
     cmd: "c2s_move",
-    position: { x: 74, y: 52.6 }
+    position: { x: 73.9, y: 51.6 }
   },
   {
-    TIMEFRAME: 65612,
+    TIMEFRAME: 66612,
     id: "212",
     cmd: "c2s_rotation",
     direct: 1,
     angle: 321.4006515681866
   },
   {
-    TIMEFRAME: 75452,
+    TIMEFRAME: 74452,
     id: "212",
     cmd: "c2s_move",
-    position: { x: 78.2, y: 63.9 }
+    position: { x: 78.5, y: 64 }
   },
+  {
+    TIMEFRAME: 82912,
+    id: "212",
+    cmd: "c2s_rotation",
+    direct: 1,
+    angle: 205
+  },
+  { TIMEFRAME: 83499, id: "212", cmd: "c2s_attack" },
+
   // {
   //   TIMEFRAME: 81555,
   //   id: "212",
@@ -1003,8 +989,7 @@ export const actionRecords = [
   // },
   // 被围剿击毙
   { TIMEFRAME: 86717, id: "212", cmd: "c2s_hp", decrHp: 40 },
-  { TIMEFRAME: 86876, id: "212", cmd: "c2s_hp", decrHp: 30 },
-  { TIMEFRAME: 87474, id: "212", cmd: "c2s_hp", decrHp: 30 },
+  { TIMEFRAME: 86876, id: "212", cmd: "c2s_hp", decrHp: 60 },
 
   /** 213陈建忠 蓝D */
   // 武器就绪
@@ -1025,34 +1010,34 @@ export const actionRecords = [
     position: { x: 95.8, y: 90.2 }
   },
   // 第二阶段
-  {
-    TIMEFRAME: 38385,
-    id: "213",
-    cmd: "c2s_move",
-    position: { x: 92.1, y: 93.4 }
-  },
-  {
-    TIMEFRAME: 42752,
-    id: "213",
-    cmd: "c2s_rotation",
-    direct: 1,
-    angle: 354.44558250564063
-  },
-  { TIMEFRAME: 44221, id: "213", cmd: "c2s_attack" },
-  { TIMEFRAME: 47166, id: "213", cmd: "c2s_attack" },
-  {
-    TIMEFRAME: 52129,
-    id: "213",
-    cmd: "c2s_move",
-    position: { x: 96.1, y: 90 }
-  },
-  {
-    TIMEFRAME: 55102,
-    id: "213",
-    cmd: "c2s_rotation",
-    direct: 1,
-    angle: 183.16973038798787
-  },
+  // {
+  //   TIMEFRAME: 38385,
+  //   id: "213",
+  //   cmd: "c2s_move",
+  //   position: { x: 92.1, y: 93.4 }
+  // },
+  // {
+  //   TIMEFRAME: 42752,
+  //   id: "213",
+  //   cmd: "c2s_rotation",
+  //   direct: 1,
+  //   angle: 354.44558250564063
+  // },
+  // { TIMEFRAME: 44221, id: "213", cmd: "c2s_attack" },
+  // { TIMEFRAME: 47166, id: "213", cmd: "c2s_attack" },
+  // {
+  //   TIMEFRAME: 52129,
+  //   id: "213",
+  //   cmd: "c2s_move",
+  //   position: { x: 96.1, y: 90 }
+  // },
+  // {
+  //   TIMEFRAME: 55102,
+  //   id: "213",
+  //   cmd: "c2s_rotation",
+  //   direct: 1,
+  //   angle: 183.16973038798787
+  // },
   {
     TIMEFRAME: 63329,
     id: "213",
@@ -1137,93 +1122,86 @@ export const actionRecords = [
     position: { x: 120.3, y: 60.9 }
   },
   {
-    TIMEFRAME: 3626,
-    id: "206",
-    cmd: "c2s_rotation",
-    direct: 0,
-    angle: 8.403596597181433
-  },
-  {
     TIMEFRAME: 5040,
     id: "206",
     cmd: "c2s_move",
-    position: { x: 97.6, y: 53.2 }
+    position: { x: 97.2, y: 51.7 }
   },
   {
-    TIMEFRAME: 19881,
+    TIMEFRAME: 20881,
     id: "206",
     cmd: "c2s_rotation",
     direct: 1,
     angle: 305.5871332892772
-  },
-  // 第三阶段
-  {
-    TIMEFRAME: 49884,
-    id: "206",
-    cmd: "c2s_move",
-    position: { x: 94.4, y: 49.5 }
-  },
-  {
-    TIMEFRAME: 52548,
-    id: "206",
-    cmd: "c2s_rotation",
-    direct: 1,
-    angle: 315.52912957754916
-  },
-  {
-    TIMEFRAME: 63527,
-    id: "206",
-    cmd: "c2s_move",
-    position: { x: 97.3, y: 52.4 }
-  },
-  {
-    TIMEFRAME: 66207,
-    id: "206",
-    cmd: "c2s_rotation",
-    direct: 1,
-    angle: 182.41950921665634
-  },
-  {
-    TIMEFRAME: 99293,
-    id: "206",
-    cmd: "c2s_rotation",
-    direct: 1,
-    angle: 355.8958064654473
-  },
-  {
-    TIMEFRAME: 101122,
-    id: "206",
-    cmd: "c2s_move",
-    position: { x: 93.7, y: 48.9 }
-  },
-
-  {
-    TIMEFRAME: 104430,
-    id: "206",
-    cmd: "c2s_rotation",
-    direct: 1,
-    angle: 320.46028104237246
-  },
-  { TIMEFRAME: 106324, id: "206", cmd: "c2s_attack" },
-  {
-    TIMEFRAME: 108172,
-    id: "206",
-    cmd: "c2s_rotation",
-    direct: 1,
-    angle: 351.53257357844126
-  },
-  { TIMEFRAME: 111666, id: "206", cmd: "c2s_attack" },
-  {
-    TIMEFRAME: 135550,
-    id: "206",
-    cmd: "c2s_move",
-    position: { x: 97.3, y: 52.6 }
-  },
-  {
-    TIMEFRAME: 139070,
-    id: "206",
-    cmd: "c2s_rotation",
-    direct: 1,
-    angle: 195.91441963100195
   }
+  // 第三阶段
+  // {
+  //   TIMEFRAME: 49884,
+  //   id: "206",
+  //   cmd: "c2s_move",
+  //   position: { x: 94.4, y: 49.5 }
+  // },
+  // {
+  //   TIMEFRAME: 52548,
+  //   id: "206",
+  //   cmd: "c2s_rotation",
+  //   direct: 1,
+  //   angle: 315.52912957754916
+  // },
+  // {
+  //   TIMEFRAME: 63527,
+  //   id: "206",
+  //   cmd: "c2s_move",
+  //   position: { x: 97.3, y: 52.4 }
+  // },
+  // {
+  //   TIMEFRAME: 66207,
+  //   id: "206",
+  //   cmd: "c2s_rotation",
+  //   direct: 1,
+  //   angle: 182.41950921665634
+  // },
+  // {
+  //   TIMEFRAME: 99293,
+  //   id: "206",
+  //   cmd: "c2s_rotation",
+  //   direct: 1,
+  //   angle: 355.8958064654473
+  // },
+  // {
+  //   TIMEFRAME: 101122,
+  //   id: "206",
+  //   cmd: "c2s_move",
+  //   position: { x: 93.7, y: 48.9 }
+  // },
+
+  // {
+  //   TIMEFRAME: 104430,
+  //   id: "206",
+  //   cmd: "c2s_rotation",
+  //   direct: 1,
+  //   angle: 320.46028104237246
+  // },
+  // { TIMEFRAME: 106324, id: "206", cmd: "c2s_attack" },
+  // {
+  //   TIMEFRAME: 108172,
+  //   id: "206",
+  //   cmd: "c2s_rotation",
+  //   direct: 1,
+  //   angle: 351.53257357844126
+  // },
+  // { TIMEFRAME: 111666, id: "206", cmd: "c2s_attack" },
+  // {
+  //   TIMEFRAME: 135550,
+  //   id: "206",
+  //   cmd: "c2s_move",
+  //   position: { x: 97.3, y: 52.6 }
+  // },
+  // {
+  //   TIMEFRAME: 139070,
+  //   id: "206",
+  //   cmd: "c2s_rotation",
+  //   direct: 1,
+  //   angle: 195.91441963100195
+  // }
 ];

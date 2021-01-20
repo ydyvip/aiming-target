@@ -18,9 +18,9 @@
     <p>
       指令总数:{{ actionRecords.length }};&emsp;已播放指令:{{
         cmdPlayedRecords.length
-      }};&emsp;栈存指令:{{ cmdStackRecords.length }};&emsp;坐标:X:{{
+      }};&emsp;栈存指令:{{ cmdStackRecords.length }};&emsp;坐标:&emsp;x:{{
         selectedUnit.x | scaleFilter
-      }}&emsp;Y:{{ selectedUnit.y | scaleFilter }}
+      }},&nbsp;y:{{ selectedUnit.y | scaleFilter }}
     </p>
     <div class="c-controls">
       <input
@@ -733,7 +733,7 @@ export default {
       unit,
       { attackRotation, attackDistance } = {
         attackRotation: 0,
-        attackDistance: 80
+        attackDistance: 30
       }
     ) {
       // 绘制攻击线
@@ -899,6 +899,8 @@ export default {
 
     // 行为解析
     behaviorsProcessing(unit, data) {
+      // 是否执行行为
+      if (!this.openBehavior) return;
       const { id, cmd, actors } = data || {};
       const interval = 300;
 
@@ -912,8 +914,6 @@ export default {
               type: "Attack",
               targetId: actors[0].id,
               data: setInterval(() => {
-                // 是否执行行为
-                if (!this.openBehavior) return;
                 this.handleSendCommand("controls", {
                   id: unit.unitId,
                   cmd: "c2s_attack"
@@ -1085,15 +1085,16 @@ export default {
 
             break;
           case "s2c_rotation":
+            unit.rotation = this.parseRotating(unit, rotation, true);
             // 处理转向
-            if (consumerTime)
-              tween.to(
-                {
-                  rotation: this.parseRotating(unit, rotation, true)
-                },
-                consumerTime,
-                createjs.Ease.linear
-              );
+            // if (consumerTime)
+            //   tween.to(
+            //     {
+            //       rotation: this.parseRotating(unit, rotation, true)
+            //     },
+            //     consumerTime,
+            //     createjs.Ease.linear
+            //   );
 
             break;
           case "s2c_attack":
