@@ -85,70 +85,6 @@ export const actionRecords = [
     angle: 28
   },
 
-  // { TIMEFRAME: 89914, id: "101", cmd: "c2s_attack" },
-  // { TIMEFRAME: 91793, id: "101", cmd: "c2s_attack" },
-  // 第三阶段
-  // {
-  //   TIMEFRAME: 92167,
-  //   id: "101",
-  //   cmd: "c2s_move",
-  //   position: { x: 66.4, y: 24.6 }
-  // },
-  // {
-  //   TIMEFRAME: 94625,
-  //   id: "101",
-  //   cmd: "c2s_rotation",
-  //   direct: 1,
-  //   angle: 170.65102241071804
-  // },
-  // {
-  //   TIMEFRAME: 130134,
-  //   id: "101",
-  //   cmd: "c2s_rotation",
-  //   direct: 0,
-  //   angle: 28.88978390067541
-  // },
-  // {
-  //   TIMEFRAME: 135815,
-  //   id: "101",
-  //   cmd: "c2s_move",
-  //   position: { x: 69.4, y: 27.4 }
-  // },
-  // {
-  //   TIMEFRAME: 137937,
-  //   id: "101",
-  //   cmd: "c2s_rotation",
-  //   direct: 0,
-  //   angle: 38.736453173740614
-  // },
-  // {
-  //   TIMEFRAME: 138992,
-  //   id: "101",
-  //   cmd: "c2s_rotation",
-  //   direct: 0,
-  //   angle: 43.781124764873084
-  // },
-
-  // { TIMEFRAME: 140779, id: "101", cmd: "c2s_attack" },
-  // {
-  //   TIMEFRAME: 142059,
-  //   id: "101",
-  //   cmd: "c2s_move",
-  //   position: { x: 66.4, y: 24.6 }
-  // },
-  // {
-  //   TIMEFRAME: 143865,
-  //   id: "101",
-  //   cmd: "c2s_move",
-  //   position: { x: 65.9, y: 23.9 }
-  // },
-  // {
-  //   TIMEFRAME: 148224,
-  //   id: "101",
-  //   cmd: "c2s_rotation",
-  //   direct: 1,
-  //   angle: 106.3230462290607
-  // },
   {
     TIMEFRAME: 140556,
     id: "101",
@@ -191,6 +127,8 @@ export const actionRecords = [
     cmd: "c2s_move",
     position: { x: 121.4, y: 52.7 }
   },
+  { TIMEFRAME: 206981, id: "101", cmd: "c2s_attack" },
+  { TIMEFRAME: 208981, id: "101", cmd: "c2s_attack" },
 
   /** 102刘建国 红B */
   // 武器就绪
@@ -263,29 +201,29 @@ export const actionRecords = [
     position: { x: 71.9, y: 50.6 }
   },
   {
-    TIMEFRAME: 104480,
+    TIMEFRAME: 96480,
     id: "102",
     cmd: "c2s_move",
     position: { x: 74.6, y: 60.3 }
   },
 
   {
-    TIMEFRAME: 106057,
+    TIMEFRAME: 98057,
     id: "102",
     cmd: "c2s_move",
     position: { x: 75.7, y: 59.9 }
   },
-  { TIMEFRAME: 108217, id: "102", cmd: "c2s_attack" },
-  { TIMEFRAME: 110629, id: "102", cmd: "c2s_attack" },
+  { TIMEFRAME: 99217, id: "102", cmd: "c2s_attack" },
+  { TIMEFRAME: 100629, id: "102", cmd: "c2s_attack" },
   // 第三阶段
   {
-    TIMEFRAME: 112296,
+    TIMEFRAME: 106296,
     id: "102",
     cmd: "c2s_move",
     position: { x: 76.7, y: 51.6 }
   },
   {
-    TIMEFRAME: 116536,
+    TIMEFRAME: 111536,
     id: "102",
     cmd: "c2s_rotation",
     direct: 1,
@@ -366,25 +304,24 @@ export const actionRecords = [
     TIMEFRAME: 89014,
     id: "103",
     cmd: "c2s_move",
-    position: { x: 66.3, y: 93.7 }
+    position: { x: 73.6, y: 85.3 }
   },
-  { TIMEFRAME: 96955, id: "103", cmd: "c2s_attack" },
+  { TIMEFRAME: 97555, id: "103", cmd: "c2s_attack" },
   { TIMEFRAME: 99248, id: "103", cmd: "c2s_attack" },
   {
     TIMEFRAME: 100106,
     id: "103",
     cmd: "c2s_move",
-    position: { x: 76, y: 86.5 }
+    position: { x: 76.8, y: 85.3 }
   },
-  { TIMEFRAME: 103126, id: "103", cmd: "c2s_attack" },
   {
-    TIMEFRAME: 106158,
+    TIMEFRAME: 105312,
     id: "103",
-    cmd: "c2s_move",
-    position: { x: 76.4, y: 85.5 }
+    cmd: "c2s_rotation",
+    direct: 1,
+    angle: 325.84199562024673
   },
-  { TIMEFRAME: 106876, id: "103", cmd: "c2s_attack" },
-  { TIMEFRAME: 107474, id: "103", cmd: "c2s_attack" },
+
   // 第四阶段
   {
     TIMEFRAME: 120466,
@@ -410,8 +347,11 @@ export const actionRecords = [
     id: "103",
     cmd: "c2s_rotation",
     direct: 1,
-    angle: 407.2704496706671
+    angle: 437.2704496706671
   },
+  // 第5阶段
+  { TIMEFRAME: 202981, id: "103", cmd: "c2s_attack" },
+  { TIMEFRAME: 204981, id: "103", cmd: "c2s_attack" },
 
   /** 112赵八一 红D */
   // 武器就绪
@@ -470,11 +410,11 @@ export const actionRecords = [
   { TIMEFRAME: 90900, id: "112", cmd: "c2s_attack" },
   { TIMEFRAME: 92413, id: "112", cmd: "c2s_attack" },
   {
-    TIMEFRAME: 94735,
+    TIMEFRAME: 96735,
     id: "112",
     cmd: "c2s_rotation",
     direct: 1,
-    angle: 40.69843463234682
+    angle: 25.69843463234682
   },
   // {
   //   TIMEFRAME: 85403,
@@ -874,6 +814,16 @@ export const actionRecords = [
     direct: 1,
     angle: 52.934953995996096
   },
+  // 第5阶段回防
+  {
+    TIMEFRAME: 192471,
+    id: "202",
+    cmd: "c2s_move",
+    position: { x: 120.1, y: 49.2 }
+  },
+  // 被101击毙
+  { TIMEFRAME: 206981, id: "202", cmd: "c2s_hp", decrHp: 40 },
+  { TIMEFRAME: 208981, id: "202", cmd: "c2s_hp", decrHp: 60 },
 
   /** 212王爱国 蓝C */
   // 武器就绪
@@ -922,7 +872,7 @@ export const actionRecords = [
     position: { x: 78.5, y: 64 }
   },
   {
-    TIMEFRAME: 47892,
+    TIMEFRAME: 48892,
     id: "212",
     cmd: "c2s_rotation",
     direct: 1,
@@ -971,20 +921,19 @@ export const actionRecords = [
   },
   // 第四阶段
   {
-    TIMEFRAME: 103555,
+    TIMEFRAME: 97055,
     id: "212",
     cmd: "c2s_move",
     position: { x: 76, y: 61.9 }
   },
-  // {
-  //   TIMEFRAME: 84874,
-  //   id: "212",
-  //   cmd: "c2s_move",
-  //   position: { x: 74.9, y: 54.2 }
-  // },
+  {
+    TIMEFRAME: 97174,
+    id: "212",
+    cmd: "c2s_attack"
+  },
   // 被围剿击毙
-  { TIMEFRAME: 106876, id: "212", cmd: "c2s_hp", decrHp: 40 },
-  { TIMEFRAME: 107474, id: "212", cmd: "c2s_hp", decrHp: 60 },
+  { TIMEFRAME: 97555, id: "212", cmd: "c2s_hp", decrHp: 40 },
+  { TIMEFRAME: 99248, id: "212", cmd: "c2s_hp", decrHp: 60 },
 
   /** 213陈建忠 蓝D */
   // 武器就绪
@@ -1128,75 +1077,29 @@ export const actionRecords = [
     cmd: "c2s_rotation",
     direct: 1,
     angle: 305.5871332892772
-  }
-  // 第三阶段
-  // {
-  //   TIMEFRAME: 49884,
-  //   id: "206",
-  //   cmd: "c2s_move",
-  //   position: { x: 94.4, y: 49.5 }
-  // },
-  // {
-  //   TIMEFRAME: 52548,
-  //   id: "206",
-  //   cmd: "c2s_rotation",
-  //   direct: 1,
-  //   angle: 315.52912957754916
-  // },
-  // {
-  //   TIMEFRAME: 63527,
-  //   id: "206",
-  //   cmd: "c2s_move",
-  //   position: { x: 97.3, y: 52.4 }
-  // },
-  // {
-  //   TIMEFRAME: 66207,
-  //   id: "206",
-  //   cmd: "c2s_rotation",
-  //   direct: 1,
-  //   angle: 182.41950921665634
-  // },
-  // {
-  //   TIMEFRAME: 99293,
-  //   id: "206",
-  //   cmd: "c2s_rotation",
-  //   direct: 1,
-  //   angle: 355.8958064654473
-  // },
-  // {
-  //   TIMEFRAME: 101122,
-  //   id: "206",
-  //   cmd: "c2s_move",
-  //   position: { x: 93.7, y: 48.9 }
-  // },
-
-  // {
-  //   TIMEFRAME: 104430,
-  //   id: "206",
-  //   cmd: "c2s_rotation",
-  //   direct: 1,
-  //   angle: 320.46028104237246
-  // },
-  // { TIMEFRAME: 106324, id: "206", cmd: "c2s_attack" },
-  // {
-  //   TIMEFRAME: 108172,
-  //   id: "206",
-  //   cmd: "c2s_rotation",
-  //   direct: 1,
-  //   angle: 351.53257357844126
-  // },
-  // { TIMEFRAME: 111666, id: "206", cmd: "c2s_attack" },
-  // {
-  //   TIMEFRAME: 135550,
-  //   id: "206",
-  //   cmd: "c2s_move",
-  //   position: { x: 97.3, y: 52.6 }
-  // },
-  // {
-  //   TIMEFRAME: 139070,
-  //   id: "206",
-  //   cmd: "c2s_rotation",
-  //   direct: 1,
-  //   angle: 195.91441963100195
-  // }
+  },
+  // 第五阶段回防
+  {
+    TIMEFRAME: 192500,
+    id: "206",
+    cmd: "c2s_rotation",
+    direct: 1,
+    angle: 429.5871332892772
+  },
+  {
+    TIMEFRAME: 193881,
+    id: "206",
+    cmd: "c2s_rotation",
+    direct: 1,
+    angle: 104.5871332892772
+  },
+  {
+    TIMEFRAME: 198881,
+    id: "206",
+    cmd: "c2s_move",
+    position: { x: 115.4, y: 62.5 }
+  },
+  // 被103击毙
+  { TIMEFRAME: 202981, id: "206", cmd: "c2s_hp", decrHp: 40 },
+  { TIMEFRAME: 204981, id: "206", cmd: "c2s_hp", decrHp: 60 }
 ];

@@ -122,6 +122,12 @@
       <input
         class="btn"
         type="button"
+        :value="'回放' + (playback ? '开' : '关')"
+        @click="playback = !playback"
+      />
+      <input
+        class="btn"
+        type="button"
         :value="'行为' + (openBehavior ? '开' : '关')"
         @click="openBehavior = !openBehavior"
       />
@@ -178,6 +184,7 @@ export default {
       stage: null,
 
       openBehavior: false, // 是否执行行为
+      playback: false, // 是否执行回放
       // 选中的unit
       selectedUnit: {
         unitId: null,
@@ -1309,6 +1316,9 @@ export default {
             });
             // 推演速度
             assumptionData.initData.timeSpeed = this.timeSpeed;
+
+            // 回放
+            assumptionData.initData.playback = this.playback;
 
             // 锁定单位
             if (this.currentUnitId) {

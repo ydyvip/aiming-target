@@ -6,6 +6,7 @@ export const assumptionData = {
     timeSpeed: 1,
     frame: 10,
     tickTime: 50,
+    playback: false, // 是否回放
     reds: [],
     blues: []
   }
