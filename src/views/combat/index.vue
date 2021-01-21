@@ -277,7 +277,7 @@ export default {
       // this.stage.scaleY = scale;
     };
   },
-  destroy() {
+  destroyed() {
     socketMap.close();
   },
   methods: {
@@ -526,7 +526,7 @@ export default {
       hpContainer.name = name;
       // 绘制血量Bar
       const healthBar = this.drawRoundRect(
-        healthPoints,
+        "healthBar",
         "0x414141",
         "0x414141",
         offsetX,
@@ -540,7 +540,7 @@ export default {
         ratio < 0.4 ? "0xff0000" : ratio < 0.8 ? "0xffff00" : "0x00ff00";
       // 绘制血量
       const healthPoints = this.drawRoundRect(
-        healthPoints,
+        "healthPoints",
         ratioColor,
         ratioColor,
         offsetX + stroke,
