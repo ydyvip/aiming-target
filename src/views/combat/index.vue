@@ -823,12 +823,10 @@ export default {
               x: stageX,
               y: stageY
             };
-            // 取当前rotation朝向
+            // 取当前rotation朝向 解析为正东夹角
             const currentRotation = this.selectedUnit.rotation;
-            // 取两点之间的正北0度夹角角度
+            // 取两点之间的正东0度夹角角度
             const directAngle = getAngle(startXY, endXY);
-            // 指向角度
-            const rotatingAngle = Math.abs((directAngle + 270) % 360);
 
             this.handleSendCommand("controls", {
               id: this.selectedUnit.unitId,
@@ -839,9 +837,9 @@ export default {
                 } else if (angle < 0) {
                   return 0;
                 }
-              })(rotatingAngle - currentRotation),
+              })(directAngle - currentRotation),
               // 转角角度 只要计算差值
-              angle: Math.abs(rotatingAngle - currentRotation)
+              angle: Math.abs(directAngle - currentRotation)
             });
           }
           setTimeout(() => {

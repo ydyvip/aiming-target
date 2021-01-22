@@ -39,12 +39,12 @@ export function strLength(str) {
 }
 
 /*
- * 计算两点之间的正北0度夹角角度
+ * 计算两点之间的正东0度夹角角度
  * @param {*} start format:{'x': 30, 'y': 120 }
  * @param {*} end
  */
 export function getAngle({ x: x1, y: y1 }, { x: x2, y: y2 }) {
-  let radian = Math.atan2(x2 - x1, y1 - y2); //弧度 -0.6435011087932844, 即 2*Math.PI - 0.6435011087932844
+  let radian = Math.atan2(y2 - y1, x2 - x1); //弧度 -0.6435011087932844, 即 2*Math.PI - 0.6435011087932844
   let theta = radian * (180 / Math.PI); //角度 -36.86989764584402，即360 - 36.86989764584402 = 323.13010235415598
   return theta;
 }
