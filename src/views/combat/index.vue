@@ -129,7 +129,7 @@
         class="btn"
         type="button"
         :value="'行为' + (openBehavior ? '开' : '关')"
-        @click="openBehavior = !openBehavior"
+        @click="handleUseBehaviorTree()"
       />
     </div>
 
@@ -142,15 +142,18 @@
 </template>
 
 <script>
-import { cloneDeep } from "lodash";
 import createjs from "createjs-npm";
 import socketMap from "@/api/socket";
 import { strLength, getAngle } from "@/utils";
 
 import { EventType, emitter } from "@/EventEmitter";
 import { assumptionData } from "./assumption";
+
 import { actionRecords } from "@/assets/story/records-2";
 import { combatUnits } from "./combatUnits";
+// 行为树
+import { BehaviorTree, Blackboard } from "@/behavior";
+import { UnitFightAttack } from "@/assets/behaviors/soldier";
 
 const visualDistance = 40; // 视线距离
 const visualAngle = 124; // 视线夹角
@@ -220,7 +223,9 @@ export default {
       actionRecords, // 指令总数
       cmdHistoryRecords: [], // 历史记录
       cmdStackRecords: [], // 播放指令栈
-      cmdPlayedRecords: [] // 播放过的指令
+      cmdPlayedRecords: [], // 播放过的指令
+
+      actorSituation: null // 态势播报
     };
   },
   computed: {
@@ -297,7 +302,7 @@ export default {
       // 创建一个舞台，得到一个参考的画布
       this.stage = new createjs.Stage(canvasStage);
       createjs.Touch.enable(this.stage);
-      createjs.Ticker.setFPS(60);
+      createjs.Ticker.framerate = 60;
       createjs.Ticker.addEventListener("tick", this.doTicker);
       // createjs.Ticker.paused = true;
     },
@@ -329,6 +334,13 @@ export default {
       // });
 
       this.bindEvent(backgroudContainer);
+    },
+    // 初始化bt
+    initBT() {
+      const { trees } = UnitFightAttack || {};
+      const tree = new BehaviorTree();
+      tree.load(trees[0], []);
+      return tree;
     },
 
     // resize
@@ -591,6 +603,7 @@ export default {
         density,
         weaponIndex,
         status,
+        group,
         position
       } = params;
 
@@ -607,6 +620,34 @@ export default {
       unitContainer.weaponIndex = weaponIndex;
       // 当前持枪状态
       unitContainer.status = status;
+      // 当前阵营
+      unitContainer.group = group;
+      // 当前锁定目标
+      unitContainer.target = null;
+      // 当前血量
+      unitContainer.hp = 100;
+      // 当前武器
+      unitContainer.weaponType = "HAND";
+      // 当前弹药
+      unitContainer.ammunitionAmount = 0;
+      // 当前攻击距离
+      unitContainer.attackDistance = 0;
+      // 当前缩放
+      unitContainer.mapScale = mapScale;
+      // 当前装弹时间
+      unitContainer.loadingTime = 1000;
+      // 当前推演速度
+      Object.defineProperty(unitContainer, "timeSpeed", {
+        get: () => {
+          return this.timeSpeed;
+        }
+      });
+      // 当前态势数据
+      Object.defineProperty(unitContainer, "actorSituation", {
+        get: () => {
+          return this.actorSituation;
+        }
+      });
 
       // 添加形状实例到舞台显示列表
       this.stage.addChild(unitContainer);
@@ -681,9 +722,20 @@ export default {
       unitContainer.x = position.x * mapScale;
       unitContainer.y = position.y * mapScale;
 
+      // 创建blackboard
+      const blackboard = new Blackboard();
+      // 初始化单位行为树
+      const BT = this.initBT();
+      // ticker BT
+      const btTickTime = 500;
+      unitContainer.btInterval = setInterval(
+        () => BT.tick(unitContainer, blackboard),
+        btTickTime
+      );
+
       // 绑定事件
-      unitContainer.on("click", event => {
-        const { currentTarget, nativeEvent } = event;
+      unitContainer.on("click", eventClick => {
+        const { currentTarget, nativeEvent } = eventClick;
         nativeEvent.preventDefault();
         // 锁定操作单位
         if (this.currentUnitId && currentTarget.unitId !== this.currentUnitId) {
@@ -696,8 +748,8 @@ export default {
       });
 
       // 动态更新数据
-      unitContainer.on("tick", e => {
-        const { currentTarget } = e;
+      unitContainer.on("tick", eventTick => {
+        const { currentTarget, timeStamp } = eventTick;
         const healthPointBar = currentTarget.getChildByName("healthPointBar");
         unitLabel.rotation = -currentTarget.rotation;
         healthPointBar.rotation = -currentTarget.rotation;
@@ -827,19 +879,24 @@ export default {
             const currentRotation = this.selectedUnit.rotation;
             // 取两点之间的正东0度夹角角度
             const directAngle = getAngle(startXY, endXY);
-
+            // 转角差值
+            const diffDegree = Math.min(
+              Math.abs(directAngle - currentRotation),
+              360 - Math.abs(directAngle - currentRotation)
+            );
             this.handleSendCommand("controls", {
               id: this.selectedUnit.unitId,
               cmd: "c2s_rotation",
               direct: (function check(angle) {
-                if (angle >= 0) {
-                  return 1;
-                } else if (angle < 0) {
+                const lOrR = (angle + 360) % 360 > 180;
+                if (lOrR) {
                   return 0;
+                } else {
+                  return 1;
                 }
               })(directAngle - currentRotation),
               // 转角角度 只要计算差值
-              angle: Math.abs(directAngle - currentRotation)
+              angle: diffDegree
             });
           }
           setTimeout(() => {
@@ -894,11 +951,24 @@ export default {
         this.actionsProcessing(currentUnit, data);
       });
 
+      // 动作行为
+      emitter.on(EventType.ACTORACTION, data => {
+        this.pushLog({ "ACTORACTION_INFO：": data });
+        let currentUnit = this.units.get(data.id);
+        this.actionsProcessing(currentUnit, data);
+      });
+
       // 转向行为
       emitter.on(EventType.ROTATIONACTION, data => {
         this.pushLog({ "ROTATIONACTION_INFO：": data });
         let currentUnit = this.units.get(data.id);
         this.actionsProcessing(currentUnit, data);
+      });
+
+      // 态势数据接收
+      emitter.on(EventType.SITUATION, data => {
+        // console.log("SITUATION_INFO：", data);
+        this.situationProcessing(data);
       });
     },
 
@@ -907,41 +977,44 @@ export default {
       // 是否执行行为
       if (!this.openBehavior) return;
       const { id, cmd, actors } = data || {};
-      const interval = 300;
+      // const interval = 300;
 
       // 按指令类型处理
       switch (cmd) {
         case "s2c_enemy":
           if (actors.length) {
+            // 锁定目标
+            unit.target = actors[0];
             // 创建攻击行为
-            const aThink = {
-              id,
-              type: "Attack",
-              targetId: actors[0].id,
-              data: setInterval(() => {
-                this.handleSendCommand("controls", {
-                  id: unit.unitId,
-                  cmd: "c2s_attack"
-                });
-              }, interval),
-              clean: () => {
-                console.warn("cleanBehavior", aThink);
-                clearInterval(aThink.data);
-                aThink.finished = true;
-              },
-              finished: false
-            };
+            // const aThink = {
+            //   id,
+            //   type: "Attack",
+            //   targetId: actors[0].id,
+            //   data: setInterval(() => {
+            //     this.handleSendCommand("controls", {
+            //       id: unit.unitId,
+            //       cmd: "c2s_attack"
+            //     });
+            //   }, interval),
+            //   clean: () => {
+            //     console.warn("cleanBehavior", aThink);
+            //     clearInterval(aThink.data);
+            //     aThink.finished = true;
+            //   },
+            //   finished: false
+            // };
             // 存储行为
-            this.behaviorStack.push(aThink);
+            // this.behaviorStack.push(aThink);
           } else {
+            unit.target = null;
             // 释放行为
-            this.releaseBehavior(
-              think => think.id === id && think.type === "Attack"
-            );
+            // this.releaseBehavior(
+            //   think => think.id === id && think.type === "Attack"
+            // );
           }
         default:
-          // 再清除行为
-          this.cleanBehavior(think => think.finished);
+        // 再清除行为
+        // this.cleanBehavior(think => think.finished);
       }
     },
 
@@ -966,12 +1039,30 @@ export default {
       let healthPointBar = unit.getChildByName("healthPointBar");
       const {
         visualAngle,
-        rotation,
         timestamp,
         hp,
         weaponType,
-        ammunitionAmount
+        ammunitionAmount,
+        attackDistance,
+        loadingTime
       } = data || {};
+
+      // 赋值武器类型
+      if (Object.prototype.hasOwnProperty.call(data, "weaponType")) {
+        unit.weaponType = weaponType;
+      }
+      // 赋值弹药数量
+      if (Object.prototype.hasOwnProperty.call(data, "ammunitionAmount")) {
+        unit.ammunitionAmount = ammunitionAmount;
+      }
+      // 赋值攻击距离
+      if (Object.prototype.hasOwnProperty.call(data, "attackDistance")) {
+        unit.attackDistance = attackDistance;
+      }
+      // 赋值装弹时间
+      if (Object.prototype.hasOwnProperty.call(data, "loadingTime")) {
+        unit.loadingTime = loadingTime;
+      }
 
       // 记录时间戳计算帧数
       const TIMEFRAME = timestamp - unit.timestamp || 0;
@@ -1011,14 +1102,6 @@ export default {
         unit.hp = hp;
       }
 
-      // 换弹匣
-      if (["PISTOL", "RIFLE"].includes(weaponType) && ammunitionAmount === 0) {
-        this.handleSendCommand("controls", {
-          id: unit.unitId,
-          cmd: "c2s_load_ammunition"
-        });
-      }
-
       // HP状态处理
       if (hp <= 0) {
         // 阵亡
@@ -1037,6 +1120,8 @@ export default {
             10000,
             createjs.Ease.linear
           );
+          // 删除单位bt
+          clearInterval(unit.btInterval);
         }, 0);
       } else {
         // 复活
@@ -1071,22 +1156,30 @@ export default {
         switch (cmd) {
           case "s2c_move_start":
           case "s2c_move_end":
+            // todo: 绘制行动痕迹
+            const dotsTrack = this.drawCircle(
+              "dotsTrack",
+              "0xffffff",
+              "0x000000",
+              2
+            );
+            dotsTrack.x = x * mapScale;
+            dotsTrack.y = y * mapScale;
+            this.stage.addChild(dotsTrack);
+            setTimeout(() => {
+              this.stage.removeChild(dotsTrack);
+            }, 10000);
             // 创建补间动画
-            // if (TIMEFRAME === 0) {
-            // unit.x = x * mapScale;
-            // unit.y = y * mapScale;
-            // unit.rotation = this.parseRotating(unit, rotation);
-            // } else {
             unit.rotation = this.parseRotating(unit, rotation);
             tween.to(
               {
                 x: x * mapScale,
                 y: y * mapScale
+                // rotation: this.parseRotating(unit, rotation)
               },
               TIMEFRAME,
               createjs.Ease.linear
             );
-            // }
 
             break;
           case "s2c_rotation":
@@ -1122,55 +1215,50 @@ export default {
       }
     },
 
-    // parseRotating
+    // 解析转向数据
     parseRotating(graphics, targetDegree, noBias = false) {
       targetDegree -= 180;
+      // todo: 逻辑待完善
+      if (true) return targetDegree;
       const rotation = graphics.rotation;
-      const currentDegree =
-        rotation >= -180 && rotation < 180 ? rotation : rotation % 180;
-      // const currentDegree = Object.is(deltaAngle, -0) ? 0 : deltaAngle;
-
+      const currentDegree = rotation % 180;
       const diffDegree = Math.min(
         Math.abs(targetDegree - currentDegree),
         360 - Math.abs(targetDegree - currentDegree)
       );
       const bias = targetDegree - currentDegree;
 
+      const lOrR = (bias + 360) % 360 > 180;
       // if (!noBias && bias === -180 && !Object.is(currentDegree, -0)) {
       //   return rotation - diffDegree;
       // }
-      // if (
-      //   !noBias &&
-      //   (Math.abs(bias) === 0 ||
-      //     // parseInt(bias) === 180 ||
-      //     // parseInt(bias) === -180 ||
-      //     (rotation >= -180 && rotation < 180 && diffDegree === 180) ||
-      //     (targetDegree === -180 && Object.is(currentDegree, 0)) ||
-      //     (targetDegree === -180 && Object.is(currentDegree, -0)))
-      // ) {
-      //   return rotation;
-      // }
+      if (!noBias && (Math.abs(bias) === 0 || Math.abs(bias) === 180)) {
+        return rotation;
+      }
       // if (!noBias && bias === 180 && !Object.is(currentDegree, 0)) {
       //   return rotation + diffDegree;
       // }
+      console.log(
+        "  rotation:",
+        rotation,
+        "\n  currentDegree:",
+        currentDegree,
+        "\n  targetDegree:",
+        targetDegree,
+        "\n  lOrR:",
+        lOrR ? "turn left" : "turn right",
+        "\n  diffDegree:",
+        diffDegree
+      );
+      if (lOrR) {
+        return rotation - diffDegree;
+      }
+      return rotation + diffDegree;
+    },
 
-      const lOrR = (bias + 360) % 360 > 180;
-      // console.log(
-      //   "  rotation:",
-      //   rotation,
-      //   "\n  currentDegree:",
-      //   currentDegree,
-      //   "\n  targetDegree:",
-      //   targetDegree,
-      //   "\n  lOrR:",
-      //   lOrR ? "turn left" : "turn right",
-      //   "\n  diffDegree:",
-      //   diffDegree
-      // );
-      // if (lOrR) {
-      //   return rotation - diffDegree;
-      // }
-      return targetDegree;
+    // 态势解析
+    situationProcessing({ actorSituation }) {
+      this.actorSituation = actorSituation;
     },
 
     // todo: test动作
@@ -1209,6 +1297,10 @@ export default {
         this.logs = this.logs.splice(0, this.logMax);
       }
       this.logs.unshift(info);
+    },
+    // 使用行为树
+    handleUseBehaviorTree() {
+      this.openBehavior = !this.openBehavior;
     },
 
     // 切换开始对抗
@@ -1349,8 +1441,8 @@ export default {
       //       break;
       //   }
       // }
-      // console.log("SEND_CMD：", command);
-      console.log("SEND_CMD：", JSON.stringify(command));
+      console.log("SEND_CMD：", command);
+      // console.log("SEND_CMD：", JSON.stringify(command));
       // todo: 捕获条件
       const unitIds = [this.currentUnitId];
       // 记录指令

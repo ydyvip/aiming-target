@@ -45,6 +45,16 @@ export function strLength(str) {
  */
 export function getAngle({ x: x1, y: y1 }, { x: x2, y: y2 }) {
   let radian = Math.atan2(y2 - y1, x2 - x1); //弧度 -0.6435011087932844, 即 2*Math.PI - 0.6435011087932844
-  let theta = radian * (180 / Math.PI); //角度 -36.86989764584402，即360 - 36.86989764584402 = 323.13010235415598
+  let theta = getDegrees(radian); //角度 -36.86989764584402，即360 - 36.86989764584402 = 323.13010235415598
   return theta;
+}
+
+// 角度转弧度
+export function getRadians(degrees) {
+  return degrees * (Math.PI / 180);
+}
+
+// 弧度转角度
+export function getDegrees(radians) {
+  return radians * (180 / Math.PI);
 }

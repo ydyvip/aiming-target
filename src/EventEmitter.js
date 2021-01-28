@@ -25,8 +25,12 @@ const EventType = {
   VIEWENEMY: "viewEnemy",
   // 武器行为
   WEAPONACTION: "weaponAction",
+  // 动作行为
+  ACTORACTION: "actorAction",
   // 转向行为
   ROTATIONACTION: "rotationAction",
+  // 态势数据接收
+  SITUATION: "situation",
   // C2S控制
   CONTROLS: "controls"
 };
@@ -52,7 +56,6 @@ class EventEmitter {
    * @returns {function} bound function
    */
   on(type, handler, context) {
-    // console.log("on -> type", type);
     const bound = handler.bind(context);
 
     _emitter.on(type, bound);
