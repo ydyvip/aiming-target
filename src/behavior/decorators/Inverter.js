@@ -1,5 +1,5 @@
-import Decorator from '../core/Decorator';
-import { FAILURE, SUCCESS, ERROR } from '../constants';
+import Decorator from "../core/Decorator";
+import { FAILURE, SUCCESS, ERROR } from "../constants";
 /**
  * The Inverter decorator inverts the result of the child, returning `SUCCESS`
  * for `FAILURE` and `FAILURE` for `SUCCESS`.
@@ -16,7 +16,7 @@ export default class Inverter extends Decorator {
      * @memberof Inverter
      */
     constructor(data) {
-        data.name = 'Inverter';
+        data.name = "Inverter";
         super(data);
     }
     /**
@@ -39,4 +39,3 @@ export default class Inverter extends Decorator {
         return status;
     }
 }
-;

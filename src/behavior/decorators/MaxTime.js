@@ -1,5 +1,5 @@
-import Decorator from '../core/Decorator';
-import { FAILURE, ERROR } from '../constants';
+import Decorator from "../core/Decorator";
+import { FAILURE, ERROR } from "../constants";
 /**
  * The MaxTime decorator limits the maximum time the node child can execute.
  * Notice that it does not interrupt the execution itself (i.e., the child
@@ -24,13 +24,13 @@ export default class MaxTime extends Decorator {
      */
     constructor(maxTime = 0, child) {
         let data = {
-            name: 'MaxTime',
-            title: 'Max <maxTime>ms',
-            properties: { maxTime: 0 },
+            name: "MaxTime",
+            title: "Max <maxTime>ms",
+            properties: { maxTime: 0 }
         };
         super(data);
         if (!maxTime) {
-            throw 'maxTime parameter in MaxTime decorator is an obligatory parameter';
+            throw "maxTime parameter in MaxTime decorator is an obligatory parameter";
         }
         this.maxTime = maxTime;
     }
@@ -40,8 +40,8 @@ export default class MaxTime extends Decorator {
      * @param {Tick} tick A tick instance.
      **/
     open(tick) {
-        var startTime = (new Date()).getTime();
-        tick.blackboard.set('startTime', startTime, tick.tree.id, this.id);
+        var startTime = new Date().getTime();
+        tick.blackboard.set("startTime", startTime, tick.tree.id, this.id);
     }
     /**
      * Tick method.
@@ -53,8 +53,8 @@ export default class MaxTime extends Decorator {
         if (!this.child) {
             return ERROR;
         }
-        var currTime = (new Date()).getTime();
-        var startTime = tick.blackboard.get('startTime', tick.tree.id, this.id);
+        var currTime = new Date().getTime();
+        var startTime = tick.blackboard.get("startTime", tick.tree.id, this.id);
         var status = this.child._execute(tick);
         if (currTime - startTime > this.maxTime) {
             return FAILURE;
@@ -62,4 +62,3 @@ export default class MaxTime extends Decorator {
         return status;
     }
 }
-;

@@ -1,5 +1,5 @@
-import Action from "../../core/Action";
-import { FAILURE } from "../../constants";
+import Action from "../core/Action";
+import { FAILURE } from "../constants";
 
 /**
  * This action node returns `FAILURE` always.

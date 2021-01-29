@@ -1,5 +1,5 @@
-import Decorator from '../core/Decorator';
-import { ERROR, FAILURE } from '../constants';
+import Decorator from "../core/Decorator";
+import { ERROR, FAILURE } from "../constants";
 /**
  * RepeatUntilSuccess is a decorator that repeats the tick signal until the
  * node child returns `SUCCESS`, `RUNNING` or `ERROR`. Optionally, a maximum
@@ -23,9 +23,9 @@ export default class RepeatUntilSuccess extends Decorator {
      **/
     constructor(maxLoop = -1, child) {
         let data = {
-            name: 'RepeatUntilSuccess',
-            title: 'Repeat Until Success',
-            properties: { maxLoop: -1 },
+            name: "RepeatUntilSuccess",
+            title: "Repeat Until Success",
+            properties: { maxLoop: -1 }
         };
         super(data);
         this.maxLoop = maxLoop;
@@ -36,7 +36,7 @@ export default class RepeatUntilSuccess extends Decorator {
      * @param {Tick} tick A tick instance.
      **/
     open(tick) {
-        tick.blackboard.set('i', 0, tick.tree.id, this.id);
+        tick.blackboard.set("i", 0, tick.tree.id, this.id);
     }
     /**
      * Tick method.
@@ -48,7 +48,7 @@ export default class RepeatUntilSuccess extends Decorator {
         if (!this.child) {
             return ERROR;
         }
-        var i = tick.blackboard.get('i', tick.tree.id, this.id);
+        var i = tick.blackboard.get("i", tick.tree.id, this.id);
         var status = ERROR;
         while (this.maxLoop < 0 || i < this.maxLoop) {
             // @ts-ignore
@@ -60,8 +60,7 @@ export default class RepeatUntilSuccess extends Decorator {
                 break;
             }
         }
-        i = tick.blackboard.set('i', i, tick.tree.id, this.id);
+        i = tick.blackboard.set("i", i, tick.tree.id, this.id);
         return status;
     }
 }
-;

@@ -1,5 +1,5 @@
-import Action from "../../core/Action";
-import { SUCCESS, RUNNING } from "../../constants";
+import Action from "../core/Action";
+import { SUCCESS, RUNNING } from "../constants";
 
 /**
  * Wait a few seconds.

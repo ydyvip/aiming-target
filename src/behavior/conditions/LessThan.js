@@ -8,7 +8,8 @@ export default class LessThan extends Condition {
         super(data);
     }
     tick(tick) {
-        if (tick.target.node[this.properties.direction] < this.properties.value) {
+        const target = tick.target || {};
+        if (target[this.properties.key] < this.properties.value) {
             return SUCCESS;
         }
         return FAILURE;

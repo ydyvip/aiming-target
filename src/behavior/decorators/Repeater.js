@@ -1,5 +1,5 @@
-import Decorator from '../core/Decorator';
-import { SUCCESS, ERROR, FAILURE } from '../constants';
+import Decorator from "../core/Decorator";
+import { SUCCESS, ERROR, FAILURE } from "../constants";
 /**
  * Repeater is a decorator that repeats the tick signal until the child node
  * return `RUNNING` or `ERROR`. Optionally, a maximum number of repetitions
@@ -23,8 +23,8 @@ export default class Repeater extends Decorator {
      **/
     constructor() {
         let data = {
-            name: 'Repeater',
-            title: 'Repeat <maxLoop>x'
+            name: "Repeater",
+            title: "Repeat <maxLoop>x"
         };
         super(data);
     }
@@ -34,7 +34,7 @@ export default class Repeater extends Decorator {
      * @param {Tick} tick A tick instance.
      **/
     open(tick) {
-        tick.blackboard.set('i', 0, tick.tree.id, this.id);
+        tick.blackboard.set("i", 0, tick.tree.id, this.id);
     }
     /**
      * Tick method.
@@ -45,7 +45,7 @@ export default class Repeater extends Decorator {
         if (!this.child) {
             return ERROR;
         }
-        var i = tick.blackboard.get('i', tick.tree.id, this.id);
+        var i = tick.blackboard.get("i", tick.tree.id, this.id);
         var status = SUCCESS;
         while (this.properties.maxLoop < 0 || i < this.properties.maxLoop) {
             // @ts-ignore
@@ -57,8 +57,7 @@ export default class Repeater extends Decorator {
                 break;
             }
         }
-        tick.blackboard.set('i', i, tick.tree.id, this.id);
+        tick.blackboard.set("i", i, tick.tree.id, this.id);
         return status;
     }
 }
-;

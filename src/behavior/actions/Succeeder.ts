@@ -1,6 +1,6 @@
-import Action from "../../core/Action";
-import { SUCCESS } from "../../constants";
-import { BaseNodeData } from "../../interf";
+import Action from "../core/Action";
+import { SUCCESS } from "../constants";
+import { BaseNodeData } from "../interf";
 
 /**
  * This action node returns `SUCCESS` always.
