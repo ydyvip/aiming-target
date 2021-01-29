@@ -11,6 +11,7 @@ import MemPriority from "./composites/MemPriority";
 import MemSequence from "./composites/MemSequence";
 import Priority from "./composites/Priority";
 import Sequence from "./composites/Sequence";
+import RandomSelectors from "./composites/RandomSelectors";
 
 import Action from "./core/Action";
 import BaseNode from "./core/BaseNode";
@@ -41,6 +42,7 @@ export {
   MemSequence,
   Priority,
   Sequence,
+  RandomSelectors,
   Action,
   BaseNode,
   BehaviorTree,

@@ -1,14 +1,18 @@
 export * from "./constants";
 import { createUUID } from "./b3.functions";
+
 import Error from "./actions/Error";
 import Failer from "./actions/Failer";
 import Runner from "./actions/Runner";
 import Succeeder from "./actions/Succeeder";
 import Wait from "./actions/Wait";
+
 import MemPriority from "./composites/MemPriority";
 import MemSequence from "./composites/MemSequence";
 import Priority from "./composites/Priority";
 import Sequence from "./composites/Sequence";
+import RandomSelectors from "./composites/RandomSelectors";
+
 import Action from "./core/Action";
 import BaseNode from "./core/BaseNode";
 import BehaviorTree from "./core/BehaviorTree";
@@ -17,6 +21,7 @@ import Composite from "./core/Composite";
 import Condition from "./core/Condition";
 import Decorator from "./core/Decorator";
 import Tick from "./core/Tick";
+
 import Inverter from "./decorators/Inverter";
 import Limiter from "./decorators/Limiter";
 import MaxTime from "./decorators/MaxTime";
@@ -37,6 +42,7 @@ export {
   MemSequence,
   Priority,
   Sequence,
+  RandomSelectors,
   Action,
   BaseNode,
   BehaviorTree,
