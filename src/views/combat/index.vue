@@ -803,14 +803,25 @@ export default {
         true
       );
 
-      // 攻击线加入容器
-      unit.addChild(aimingTo);
       // 攻击偏转角
       aimingTo.rotation = attackRotation;
       // 销毁攻击
-      setTimeout(() => {
-        unit.removeChild(aimingTo);
-      }, 100);
+      createjs.Tween.get(aimingTo, {
+        loop: false,
+        override: false
+      })
+        .to(
+          {
+            alpha: 0
+          },
+          100,
+          createjs.Ease.linear
+        )
+        .call(() => {
+          unit.removeChild(aimingTo);
+        });
+      // 攻击线加入容器
+      unit.addChild(aimingTo);
     },
 
     // 外部修改模式
@@ -1163,10 +1174,22 @@ export default {
             );
             dotsTrack.x = x * mapScale;
             dotsTrack.y = y * mapScale;
+            createjs.Tween.get(dotsTrack, {
+              loop: false,
+              override: false
+            })
+              .to(
+                {
+                  alpha: 0
+                },
+                10000,
+                createjs.Ease.linear
+              )
+              .call(() => {
+                this.stage.removeChild(dotsTrack);
+              });
             this.stage.addChild(dotsTrack);
-            setTimeout(() => {
-              this.stage.removeChild(dotsTrack);
-            }, 10000);
+
             // 创建补间动画
             tween
               .to(
