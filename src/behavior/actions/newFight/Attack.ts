@@ -12,14 +12,14 @@ export default class Attack extends Action {
   }
 
   tick(tick) {
-    const { unitId, group, target } = tick.target || {};
+    const { unitId, group, targetId } = tick.target || {};
     // 攻击目标
     socketMap.emit("controls", {
       id: unitId,
       cmd: "c2s_attack"
     });
     console.info(
-      `%c${group + unitId}: Attacking ${target.id}`,
+      `%c${group + unitId}: Attacking ${targetId}`,
       `color: ${group.slice(0, -1)}; font-size: 14px;`
     );
     return SUCCESS;

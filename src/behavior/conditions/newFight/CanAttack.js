@@ -8,9 +8,12 @@ export default class CanAttack extends Condition {
         super(data);
     }
     tick(tick) {
-        const { weaponType, ammunitionAmount } = tick.target || {};
-        if ((["PISTOL", "RIFLE"].includes(weaponType) && ammunitionAmount > 0) ||
-            "KNIFE" === weaponType) {
+        const { unitId, actorSituation = [] } = tick.target || {};
+        // 获取当前单位
+        const { curWeapon } = actorSituation.find((unit) => unit.actorState.id === unitId);
+        const { type, ammunitionAmount } = curWeapon || {};
+        if ((["PISTOL", "RIFLE"].includes(type) && ammunitionAmount > 0) ||
+            "KNIFE" === type) {
             return SUCCESS;
         }
         return FAILURE;

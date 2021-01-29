@@ -11,8 +11,11 @@ export default class FoundEnemy extends Condition {
   }
 
   tick(tick) {
-    const { unitId, group, target } = tick.target || {};
-    if (!target) {
+    const { unitId, group, actorSituation = [] } = tick.target || {};
+    const { enemyViewList } = actorSituation.find(
+      (unit: any) => unit.actorState.id === unitId
+    );
+    if (!enemyViewList.length) {
       return FAILURE;
     }
     return SUCCESS;

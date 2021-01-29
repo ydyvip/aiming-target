@@ -225,7 +225,7 @@ export default {
       cmdStackRecords: [], // 播放指令栈
       cmdPlayedRecords: [], // 播放过的指令
 
-      actorSituation: null // 态势播报
+      actorSituation: [] // 态势播报
     };
   },
   computed: {
@@ -623,19 +623,10 @@ export default {
       // 当前阵营
       unitContainer.group = group;
       // 当前锁定目标
-      unitContainer.target = null;
+      unitContainer.targetId = null;
       // 当前血量
       unitContainer.hp = 100;
-      // 当前武器
-      unitContainer.weaponType = "HAND";
-      // 当前弹药
-      unitContainer.ammunitionAmount = 0;
-      // 当前攻击距离
-      unitContainer.attackDistance = 0;
-      // 当前缩放
-      unitContainer.mapScale = mapScale;
-      // 当前装弹时间
-      unitContainer.loadingTime = 1000;
+
       // 当前推演速度
       Object.defineProperty(unitContainer, "timeSpeed", {
         get: () => {
@@ -729,7 +720,9 @@ export default {
       // ticker BT
       const btTickTime = 500;
       unitContainer.btInterval = setInterval(() => {
-        this.openBehavior && BT.tick(unitContainer, blackboard);
+        this.actorSituation.length > 0 &&
+          this.openBehavior &&
+          BT.tick(unitContainer, blackboard);
       }, btTickTime);
 
       // 绑定事件
@@ -949,8 +942,8 @@ export default {
       // 范围视野范围内敌人
       emitter.on(EventType.VIEWENEMY, data => {
         this.pushLog({ "VIEWENEMY_INFO：": data });
-        let currentUnit = this.units.get(data.id);
-        this.behaviorsProcessing(currentUnit, data);
+        // let currentUnit = this.units.get(data.id);
+        // this.behaviorsProcessing(currentUnit, data);
       });
 
       // 武器行为
@@ -993,7 +986,7 @@ export default {
         case "s2c_enemy":
           if (actors.length) {
             // 锁定目标
-            unit.target = actors[0];
+            unit.targetId = actors[0].id;
             // 创建攻击行为
             // const aThink = {
             //   id,
@@ -1015,7 +1008,7 @@ export default {
             // 存储行为
             // this.behaviorStack.push(aThink);
           } else {
-            unit.target = null;
+            unit.targetId = null;
             // 释放行为
             // this.releaseBehavior(
             //   think => think.id === id && think.type === "Attack"
@@ -1046,32 +1039,7 @@ export default {
       let deathState = unit.getChildByName("deathState");
       let visualVector = unit.getChildByName("visualVector");
       let healthPointBar = unit.getChildByName("healthPointBar");
-      const {
-        visualAngle,
-        timestamp,
-        hp,
-        weaponType,
-        ammunitionAmount,
-        attackDistance,
-        loadingTime
-      } = data || {};
-
-      // 赋值武器类型
-      if (Object.prototype.hasOwnProperty.call(data, "weaponType")) {
-        unit.weaponType = weaponType;
-      }
-      // 赋值弹药数量
-      if (Object.prototype.hasOwnProperty.call(data, "ammunitionAmount")) {
-        unit.ammunitionAmount = ammunitionAmount;
-      }
-      // 赋值攻击距离
-      if (Object.prototype.hasOwnProperty.call(data, "attackDistance")) {
-        unit.attackDistance = attackDistance;
-      }
-      // 赋值装弹时间
-      if (Object.prototype.hasOwnProperty.call(data, "loadingTime")) {
-        unit.loadingTime = loadingTime;
-      }
+      const { visualAngle, timestamp, hp } = data || {};
 
       // 记录时间戳计算帧数
       const TIMEFRAME = timestamp - unit.timestamp || 0;
@@ -1083,7 +1051,6 @@ export default {
         Object.prototype.hasOwnProperty.call(data, "visualAngle") &&
         visualAngle !== unit.visualAngle
       ) {
-        unit.visualAngle = visualAngle;
         unit.removeChild(visualVector);
         const newVisualVector = this.drawSector(
           "visualVector",
@@ -1095,6 +1062,7 @@ export default {
           unit.visualColor
         );
         unit.addChildAt(newVisualVector, 1);
+        unit.visualAngle = visualAngle;
       }
 
       // 重绘制血量
@@ -1151,7 +1119,7 @@ export default {
 
     // cmdProcessor
     cmdProcessor(unit, data, TIMEFRAME) {
-      const { id, cmd, x, y, rotation, hp, consumerTime = 100 } = data || {};
+      const { targetId, cmd, x, y, rotation, consumerTime = 100 } = data || {};
       // 创建补间对象
       const tween = createjs.Tween.get(unit, {
         loop: false,
@@ -1221,18 +1189,20 @@ export default {
           case "s2c_attack":
             // 触发攻击
             this.triggerAction("Attack", unit, data);
+            unit.targetId = targetId;
+
             break;
           // 被攻击
           case "s2c_attacked":
-            if (hp === 0) {
-              // 清除锁定行为(自己的和别人的)
-              this.releaseBehavior(
-                think => think.id === id || think.targetId === id
-              );
-              this.cleanBehavior(
-                think => think.id === id || think.targetId === id
-              );
-            }
+            // if (hp === 0) {
+            //   // 清除锁定行为(自己的和别人的)
+            //   this.releaseBehavior(
+            //     think => think.id === id || think.targetId === id
+            //   );
+            //   this.cleanBehavior(
+            //     think => think.id === id || think.targetId === id
+            //   );
+            // }
             break;
         }
       }

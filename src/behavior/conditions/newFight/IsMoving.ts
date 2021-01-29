@@ -11,8 +11,12 @@ export default class IsMoving extends Condition {
   }
 
   tick(tick) {
-    const { x, y } = tick.target || {};
-
+    const { unitId, actorSituation = [] } = tick.target || {};
+    // 获取当前单位
+    const { actorState } = actorSituation.find(
+      (unit: any) => unit.actorState.id === unitId
+    );
+    const { x, y } = actorState || {};
     const lastX = tick.blackboard.get("lastX", tick.tree.id, this.id);
     const lastY = tick.blackboard.get("lastY", tick.tree.id, this.id);
     tick.blackboard.set("lastX", x, tick.tree.id, this.id);

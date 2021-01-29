@@ -8,7 +8,10 @@ export default class NeedAmmo extends Condition {
         super(data);
     }
     tick(tick) {
-        const { unitId, group, ammunitionAmount } = tick.target || {};
+        const { unitId, group, actorSituation = [] } = tick.target || {};
+        // 获取当前单位
+        const { curWeapon } = actorSituation.find((unit) => unit.actorState.id === unitId);
+        const { ammunitionAmount } = curWeapon || {};
         if (ammunitionAmount === 0) {
             console.info(`${group + unitId}: Needs ammo`);
             return SUCCESS;

@@ -11,8 +11,12 @@ export default class UnitStatus extends Condition {
   }
 
   tick(tick) {
-    const { status } = tick.target || {};
-    if (status === this.properties.status) {
+    const { unitId, actorSituation = [] } = tick.target || {};
+    // 获取当前单位
+    const { actorState } = actorSituation.find(
+      (unit: any) => unit.actorState.id === unitId
+    );
+    if (actorState.status === this.properties.status) {
       return SUCCESS;
     } else {
       return FAILURE;

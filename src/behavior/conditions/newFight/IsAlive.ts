@@ -12,6 +12,7 @@ export default class IsAlive extends Condition {
 
   tick(tick) {
     const { unitName, hp } = tick.target || {};
+
     if (hp > 0) {
       return SUCCESS;
     } else {

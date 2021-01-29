@@ -11,8 +11,12 @@ export default class SearchEnemy extends Action {
   }
 
   tick(tick) {
-    const { unitId, group, target } = tick.target || {};
-    if (!target) {
+    const { unitId, group, actorSituation = [] } = tick.target || {};
+    // 获取当前单位
+    const { enemyViewList } = actorSituation.find(
+      (unit: any) => unit.actorState.id === unitId
+    );
+    if (!enemyViewList.length) {
       return FAILURE;
     }
     // console.info(

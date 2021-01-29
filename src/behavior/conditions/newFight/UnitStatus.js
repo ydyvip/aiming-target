@@ -8,8 +8,10 @@ export default class UnitStatus extends Condition {
         super(data);
     }
     tick(tick) {
-        const { status } = tick.target || {};
-        if (status === this.properties.status) {
+        const { unitId, actorSituation = [] } = tick.target || {};
+        // 获取当前单位
+        const { actorState } = actorSituation.find((unit) => unit.actorState.id === unitId);
+        if (actorState.status === this.properties.status) {
             return SUCCESS;
         }
         else {

@@ -8,7 +8,7 @@ export const assumptionData = {
     frame: 10,
     tickTime: 50,
     playback: false, // 是否回放
-    situationTime: 500, // 态势推送时间 isPushSItuation必须为true
+    situationTime: 250, // 态势推送时间 isPushSItuation必须为true
 
     reds: [],
     blues: []

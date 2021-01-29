@@ -18,9 +18,13 @@ export default class LoadAmmo extends Action {
    * @return {Constant} A state constant.
    **/
   tick(tick) {
-    const { unitId, group, loadingTime = 0, timeSpeed = 1000 } =
+    const { unitId, group, timeSpeed = 1000, actorSituation = [] } =
       tick.target || {};
-
+    // 获取当前单位
+    const { curWeapon } = actorSituation.find(
+      (unit: any) => unit.actorState.id === unitId
+    );
+    const { loadingTime } = curWeapon || {};
     const isReloading = tick.blackboard.get(
       "isReloading",
       tick.tree.id,

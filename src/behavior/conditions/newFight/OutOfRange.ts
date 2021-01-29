@@ -11,25 +11,22 @@ export default class OutOfRange extends Condition {
   }
 
   tick(tick) {
-    const {
-      unitId,
-      group,
-      x,
-      y,
-      target,
-      attackDistance,
-      mapScale,
-      actorSituation
-    } = tick.target || {};
-    if (!target) {
+    const { unitId, group, actorSituation = [] } = tick.target || {};
+    // 获取当前单位
+    const { actorState, curWeapon, enemyViewList } = actorSituation.find(
+      (unit: any) => unit.actorState.id === unitId
+    );
+    const { attackDistance } = curWeapon || {};
+    const { x, y } = actorState || {};
+    if (!enemyViewList.length) {
       return FAILURE;
     }
     // 获取敌方单位
-    const { actorState } = actorSituation.find(
-      (unit: any) => unit.actorState.id === target.id
+    const target = actorSituation.find(
+      (unit: any) => unit.actorState.id === enemyViewList[0]
     );
-    const detaX = x / mapScale - actorState.x;
-    const detaY = y / mapScale - actorState.y;
+    const detaX = x - target.actorState.x;
+    const detaY = y - target.actorState.y;
     const d = detaX * detaX + detaY * detaY;
     const r = attackDistance * attackDistance;
 

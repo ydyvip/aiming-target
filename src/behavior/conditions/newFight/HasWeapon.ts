@@ -15,10 +15,14 @@ export default class HasWeapon extends Condition {
   }
 
   tick(tick) {
-    const { unitId, group, weaponType } = tick.target || {};
-
-    if (this.weaponTypes.includes(weaponType)) {
-      // console.info(`${group + unitId}: Has carry a ${weaponType}`);
+    const { unitId, group, actorSituation = [] } = tick.target || {};
+    // 获取当前单位
+    const { curWeapon } = actorSituation.find(
+      (unit: any) => unit.actorState.id === unitId
+    );
+    const { type } = curWeapon || {};
+    if (this.weaponTypes.includes(type)) {
+      // console.info(`${group + unitId}: Has carry a ${type}`);
       return SUCCESS;
     }
 
