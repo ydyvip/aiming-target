@@ -409,14 +409,14 @@ export default {
     // 绘制虚线条
     drawDashLine(g, x1, y1, x2, y2, dashLength) {
       let dashLen = dashLength === undefined ? 5 : dashLength,
-        xpos = x2 - x1, //得到横向的宽度;
-        ypos = y2 - y1, //得到纵向的高度;
+        xpos = x2 - x1, // 得到横向的宽度;
+        ypos = y2 - y1, // 得到纵向的高度;
         numDashes = Math.floor(Math.sqrt(xpos * xpos + ypos * ypos) / dashLen);
-      //利用正切获取斜边的长度除以虚线长度，得到要分为多少段;
+      // 利用正切获取斜边的长度除以虚线长度，得到要分为多少段;
       for (let i = 0; i < numDashes; i++) {
         if (i % 2 === 0) {
           g.moveTo(x1 + (xpos / numDashes) * i, y1 + (ypos / numDashes) * i);
-          //有了横向宽度和多少段，得出每一段是多长，起点 + 每段长度 * i = 要绘制的起点；
+          // 有了横向宽度和多少段，得出每一段是多长，起点 + 每段长度 * i = 要绘制的起点；
         } else {
           g.lineTo(x1 + (xpos / numDashes) * i, y1 + (ypos / numDashes) * i);
         }
@@ -728,10 +728,9 @@ export default {
       const BT = this.initBT();
       // ticker BT
       const btTickTime = 500;
-      unitContainer.btInterval = setInterval(
-        () => BT.tick(unitContainer, blackboard),
-        btTickTime
-      );
+      unitContainer.btInterval = setInterval(() => {
+        this.openBehavior && BT.tick(unitContainer, blackboard);
+      }, btTickTime);
 
       // 绑定事件
       unitContainer.on("click", eventClick => {
@@ -838,15 +837,17 @@ export default {
           mouseMark.y = stageY;
           createjs.Tween.get(mouseMark, {
             loop: false
-          }).to(
-            {
-              scaleX: 5,
-              scaleY: 5,
-              alpha: 0
-            },
-            1000,
-            createjs.Ease.linear
-          );
+          })
+            .to(
+              {
+                scaleX: 5,
+                scaleY: 5,
+                alpha: 0
+              },
+              1000,
+              createjs.Ease.linear
+            )
+            .call(() => this.stage.removeChild(mouseMark));
           this.stage.addChild(mouseMark);
           // createjs 同时支持touchstart事件
           if (nativeEvent.button === 0 || nativeEvent.type === "touchstart") {
@@ -899,9 +900,6 @@ export default {
               angle: diffDegree
             });
           }
-          setTimeout(() => {
-            this.stage.removeChild(mouseMark);
-          }, 1000);
         },
         false
       );
@@ -1170,29 +1168,31 @@ export default {
               this.stage.removeChild(dotsTrack);
             }, 10000);
             // 创建补间动画
-            unit.rotation = this.parseRotating(unit, rotation);
-            tween.to(
-              {
-                x: x * mapScale,
-                y: y * mapScale
-                // rotation: this.parseRotating(unit, rotation)
-              },
-              TIMEFRAME,
-              createjs.Ease.linear
-            );
+            tween
+              .to(
+                {
+                  x: x * mapScale,
+                  y: y * mapScale,
+                  rotation: this.parseRotating(unit, rotation)
+                },
+                TIMEFRAME,
+                createjs.Ease.linear
+              )
+              .call(this.rotatingDone, [unit, rotation], this);
 
             break;
           case "s2c_rotation":
-            unit.rotation = this.parseRotating(unit, rotation, true);
-            // 处理转向
-            // if (consumerTime)
-            //   tween.to(
-            //     {
-            //       rotation: this.parseRotating(unit, rotation, true)
-            //     },
-            //     consumerTime,
-            //     createjs.Ease.linear
-            //   );
+            // 处理转向;
+            if (consumerTime)
+              tween
+                .to(
+                  {
+                    rotation: this.parseRotating(unit, rotation, true)
+                  },
+                  consumerTime,
+                  createjs.Ease.linear
+                )
+                .call(this.rotatingDone, [unit, rotation], this);
 
             break;
           case "s2c_attack":
@@ -1218,42 +1218,37 @@ export default {
     // 解析转向数据
     parseRotating(graphics, targetDegree, noBias = false) {
       targetDegree -= 180;
-      // todo: 逻辑待完善
-      if (true) return targetDegree;
       const rotation = graphics.rotation;
-      const currentDegree = rotation % 180;
+      let currentDegree;
+      if (rotation > 179) {
+        currentDegree = rotation - 360;
+      } else if (rotation < -180) {
+        currentDegree = rotation + 360;
+      } else {
+        currentDegree = rotation;
+      }
       const diffDegree = Math.min(
         Math.abs(targetDegree - currentDegree),
         360 - Math.abs(targetDegree - currentDegree)
       );
       const bias = targetDegree - currentDegree;
-
       const lOrR = (bias + 360) % 360 > 180;
-      // if (!noBias && bias === -180 && !Object.is(currentDegree, -0)) {
-      //   return rotation - diffDegree;
-      // }
       if (!noBias && (Math.abs(bias) === 0 || Math.abs(bias) === 180)) {
         return rotation;
       }
-      // if (!noBias && bias === 180 && !Object.is(currentDegree, 0)) {
-      //   return rotation + diffDegree;
-      // }
-      console.log(
-        "  rotation:",
-        rotation,
-        "\n  currentDegree:",
-        currentDegree,
-        "\n  targetDegree:",
-        targetDegree,
-        "\n  lOrR:",
-        lOrR ? "turn left" : "turn right",
-        "\n  diffDegree:",
-        diffDegree
-      );
       if (lOrR) {
         return rotation - diffDegree;
       }
       return rotation + diffDegree;
+    },
+
+    // 还原朝向向量
+    rotatingDone(unit, rotation) {
+      if (unit.rotation > 179) {
+        unit.rotation = unit.rotation - 360;
+      } else if (unit.rotation < -180) {
+        unit.rotation = unit.rotation + 360;
+      }
     },
 
     // 态势解析

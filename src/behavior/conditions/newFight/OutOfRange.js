@@ -21,7 +21,7 @@ export default class OutOfRange extends Condition {
         if (d < r) {
             return FAILURE;
         }
-        console.warn(`${group + unitId}: 超出射程`);
+        console.info(`${group + unitId}: Out of range`);
         return SUCCESS;
     }
 }

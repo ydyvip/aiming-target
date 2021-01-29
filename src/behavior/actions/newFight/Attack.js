@@ -15,7 +15,7 @@ export default class Attack extends Action {
             id: unitId,
             cmd: "c2s_attack"
         });
-        console.warn(`${group + unitId}: attack ${target.id}`);
+        console.info(`%c${group + unitId}: Attacking ${target.id}`, `color: ${group.slice(0, -1)}; font-size: 14px;`);
         return SUCCESS;
     }
 }

@@ -36,7 +36,7 @@ export default class NpcMove extends Action {
                     y: cy
                 }
             });
-            console.warn(`${group + unitId}: move ${mv}`);
+            console.info(`${group + unitId}: Distance shows ${mv} M from target`);
             return SUCCESS;
         }
     }

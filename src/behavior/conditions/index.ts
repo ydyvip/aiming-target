@@ -1,5 +1,3 @@
-export { default as CanReceive } from "./CanReceive";
-export { default as HasReceived } from "./HasReceived";
 export { default as GreaterThan } from "./GreaterThan";
 export { default as LessThan } from "./LessThan";
 
@@ -10,3 +8,5 @@ export { default as UnitStatus } from "./newFight/UnitStatus";
 export { default as IsAlive } from "./newFight/IsAlive";
 export { default as CanAttack } from "./newFight/CanAttack";
 export { default as HasWeapon } from "./newFight/HasWeapon";
+export { default as IsMoving } from "./newFight/IsMoving";
+export { default as FoundEnemy } from "./newFight/FoundEnemy";

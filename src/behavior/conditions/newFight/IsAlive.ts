@@ -15,7 +15,7 @@ export default class IsAlive extends Condition {
     if (hp > 0) {
       return SUCCESS;
     } else {
-      console.log(`${unitName}: 已阵亡`);
+      console.info(`${unitName}: Has been slain`);
       return FAILURE;
     }
   }

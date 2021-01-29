@@ -1,9 +1,9 @@
 import Action from "../../core/Action";
 import { SUCCESS, FAILURE } from "../../constants";
-export default class FindEnemy extends Action {
+export default class SearchEnemy extends Action {
     constructor() {
         let data = {
-            name: "FindEnemy"
+            name: "SearchEnemy"
         };
         super(data);
     }
@@ -12,7 +12,10 @@ export default class FindEnemy extends Action {
         if (!target) {
             return FAILURE;
         }
-        console.warn(`${group + unitId}: 发现敌方单位 ${target.id}`);
+        // console.info(
+        //   `%c${group + unitId}: Found ${target.id}`,
+        //   `color: ${group.slice(0, -1)}; font-size: 14px;`
+        // );
         return SUCCESS;
     }
 }

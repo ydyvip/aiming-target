@@ -13,7 +13,7 @@ export default class IsAlive extends Condition {
             return SUCCESS;
         }
         else {
-            console.log(`${unitName}: 已阵亡`);
+            console.info(`${unitName}: Has been slain`);
             return FAILURE;
         }
     }

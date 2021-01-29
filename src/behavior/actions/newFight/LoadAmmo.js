@@ -27,11 +27,11 @@ export default class LoadAmmo extends Action {
             cmd: "c2s_load_ammunition"
         }, () => {
             setTimeout(() => {
-                console.warn("换弹完毕！！！");
+                console.info(`%cReload ammo has done！！！`, "color: #43bb88;");
                 tick.blackboard.set("isReloading", false, tick.tree.id, this.id);
             }, loadingTime / timeSpeed);
         });
-        console.warn(`${group + unitId}: 换弹匣,耗时${loadingTime / timeSpeed}`);
+        console.info(`${group + unitId}: Reloading ammo, cost ${loadingTime / timeSpeed} ms`);
         return SUCCESS;
     }
 }

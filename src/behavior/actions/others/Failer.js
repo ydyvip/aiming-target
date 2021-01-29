@@ -22,7 +22,6 @@ export default class Failer extends Action {
      * @return {Constant} Always return `FAILURE`.
      **/
     tick(tick) {
-        console.log("欢迎来到 Failer Action");
         return FAILURE;
     }
 }

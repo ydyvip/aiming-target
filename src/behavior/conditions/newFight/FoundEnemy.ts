@@ -1,11 +1,11 @@
-import Action from "../../core/Action";
+import Condition from "../../core/Condition";
 import { BaseNodeData } from "../../interf";
 import { SUCCESS, FAILURE } from "../../constants";
 
-export default class FindEnemy extends Action {
+export default class FoundEnemy extends Condition {
   constructor() {
     let data: BaseNodeData = {
-      name: "FindEnemy"
+      name: "FoundEnemy"
     };
     super(data);
   }
@@ -15,7 +15,6 @@ export default class FindEnemy extends Action {
     if (!target) {
       return FAILURE;
     }
-    console.warn(`${group + unitId}: 发现敌方单位 ${target.id}`);
     return SUCCESS;
   }
 }

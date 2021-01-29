@@ -10,7 +10,7 @@ export default class NeedAmmo extends Condition {
     tick(tick) {
         const { unitId, group, ammunitionAmount } = tick.target || {};
         if (ammunitionAmount === 0) {
-            console.warn(`${group + unitId}: 弹匣已空`);
+            console.info(`${group + unitId}: Needs ammo`);
             return SUCCESS;
         }
         return FAILURE;

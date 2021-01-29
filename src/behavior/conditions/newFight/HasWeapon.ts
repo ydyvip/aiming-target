@@ -3,18 +3,22 @@ import { BaseNodeData } from "../../interf";
 import { SUCCESS, FAILURE } from "../../constants";
 
 export default class HasWeapon extends Condition {
-  constructor() {
+  private weaponTypes: String[];
+  constructor({ weaponTypes = "HAND" } = {}) {
     let data: BaseNodeData = {
-      name: "HasWeapon"
+      name: "HasWeapon",
+      title: "HasWeapon",
+      properties: { weaponTypes: "HAND" }
     };
     super(data);
+    this.weaponTypes = weaponTypes.split(",");
   }
 
   tick(tick) {
     const { unitId, group, weaponType } = tick.target || {};
 
-    if (["PISTOL", "RIFLE"].includes(weaponType)) {
-      console.warn(`${group + unitId}: 有${weaponType}武器`);
+    if (this.weaponTypes.includes(weaponType)) {
+      // console.info(`${group + unitId}: Has carry a ${weaponType}`);
       return SUCCESS;
     }
 
