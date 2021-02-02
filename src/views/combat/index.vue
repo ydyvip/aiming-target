@@ -13,7 +13,7 @@
     <p>
       当前选中单位:{{ selectedUnit }};&emsp;行为堆栈:{{
         behaviorStack | behaviorFilter
-      }}
+      }};&emsp;多选选中单位:{{ multipleUnits | multipleUnitsFilter }}
     </p>
     <p>
       指令总数:{{ actionRecords.length }};&emsp;已播放指令:{{
@@ -207,6 +207,14 @@ export default {
       statusOptions: STATUSINDEX,
 
       units: new Map(),
+      selectedArea: {
+        // 框选区域
+        graph: null,
+        startPoint: [],
+        endPoint: []
+      },
+      // 多选选中单位
+      multipleUnits: [],
       logs: [], // 日志内容
       logMax: 8,
       behaviorStack: [], // 行为指令栈存
@@ -257,6 +265,10 @@ export default {
           return info;
         }
       });
+    },
+    // 多选单位
+    multipleUnitsFilter(units) {
+      return units.map(unit => unit.unitId).join(",");
     }
   },
   watch: {
@@ -303,8 +315,10 @@ export default {
       this.stage = new createjs.Stage(canvasStage);
       createjs.Touch.enable(this.stage);
       createjs.Ticker.framerate = 60;
-      createjs.Ticker.addEventListener("tick", this.doTicker);
+      createjs.Ticker.on("tick", this.doTicker);
       // createjs.Ticker.paused = true;
+      // 绑定事件
+      this.bindMouseEvent(this.stage);
     },
 
     // 加载地图
@@ -333,6 +347,7 @@ export default {
       //   this.paintingObstacle(params);
       // });
 
+      // 绑定鼠标操作
       this.bindEvent(backgroudContainer);
     },
     // 初始化bt
@@ -467,13 +482,34 @@ export default {
     },
 
     // 绘制圆角矩形
-    drawRoundRect(name, color, fillColor, x, y, width, height, radius) {
+    drawRoundRect(
+      name,
+      color,
+      fillColor,
+      x,
+      y,
+      width,
+      height,
+      radius,
+      doFill = true,
+      strokeDash = null
+    ) {
       let shape = new createjs.Shape();
       shape.name = name;
-      shape.graphics
-        .beginFill(createjs.Graphics.getRGB(fillColor))
-        .beginStroke(createjs.Graphics.getRGB(color))
-        .drawRoundRect(x, y, width, height, radius, radius, radius, radius);
+      doFill && shape.graphics.beginFill(createjs.Graphics.getRGB(fillColor));
+
+      shape.graphics.beginStroke(createjs.Graphics.getRGB(color));
+      shape.graphics.setStrokeDash(strokeDash, 0);
+      shape.graphics.drawRoundRect(
+        x,
+        y,
+        width,
+        height,
+        radius,
+        radius,
+        radius,
+        radius
+      );
       return shape;
     },
 
@@ -736,6 +772,7 @@ export default {
         // 鼠标左键
         if (nativeEvent.button === 0 || nativeEvent.type === "touchstart") {
           this.selectedUnit = currentTarget;
+          this.multipleUnits = this.$options.data().multipleUnits;
         }
       });
 
@@ -824,10 +861,11 @@ export default {
 
     // 绑定事件
     bindEvent(graph) {
-      graph.addEventListener(
+      graph.on(
         "mousedown",
         event => {
           const { nativeEvent, stageX, stageY } = event;
+          if (nativeEvent.shiftKey) return;
           // don't let it bubble.
           nativeEvent.preventDefault();
           // 绘制点选圈
@@ -862,14 +900,27 @@ export default {
             });
           } else if (nativeEvent.button === 2) {
             // 鼠标右键
-            this.handleSendCommand("controls", {
-              id: this.selectedUnit.unitId,
-              cmd: "c2s_move",
-              position: {
-                x: stageX / mapScale,
-                y: stageY / mapScale
-              }
-            });
+            if (this.multipleUnits.length) {
+              this.handleSendCommand("controls", {
+                cmd: "c2s_moves",
+                actor_position: this.multipleUnits.map(unit => {
+                  return {
+                    id: unit.unitId,
+                    x: stageX / mapScale,
+                    y: stageY / mapScale
+                  };
+                })
+              });
+            } else {
+              this.handleSendCommand("controls", {
+                id: this.selectedUnit.unitId,
+                cmd: "c2s_move",
+                position: {
+                  x: stageX / mapScale,
+                  y: stageY / mapScale
+                }
+              });
+            }
           } else if (nativeEvent.button === 1) {
             // 鼠标中键
             const startXY = {
@@ -908,6 +959,56 @@ export default {
         false
       );
     },
+
+    // 绑定鼠标框选
+    bindMouseEvent(stage) {
+      let moveListener = null;
+      stage.on("stagemousedown", event => {
+        const { nativeEvent } = event;
+        if (!nativeEvent.shiftKey) return;
+        console.log("stagemousedown", nativeEvent);
+        this.selectedArea.startPoint = [nativeEvent.layerX, nativeEvent.layerY];
+
+        moveListener = stage.on("stagemousemove", moveEvent => {
+          const { nativeEvent } = moveEvent;
+          console.log("stagemousemove");
+          stage.removeChild(this.selectedArea.graph);
+          this.selectedArea.endPoint = [nativeEvent.layerX, nativeEvent.layerY];
+          this.selectedArea.graph = this.drawRoundRect(
+            "selectedArea",
+            "0xffffff",
+            "0xffffff",
+            this.selectedArea.startPoint[0],
+            this.selectedArea.startPoint[1],
+            nativeEvent.layerX - this.selectedArea.startPoint[0],
+            nativeEvent.layerY - this.selectedArea.startPoint[1],
+            0,
+            false,
+            [10, 5]
+          );
+          stage.addChild(this.selectedArea.graph);
+        });
+      });
+
+      stage.on("stagemouseup", event => {
+        const { nativeEvent } = event;
+        stage.off("stagemousemove", moveListener);
+        this.selectedArea.endPoint = [nativeEvent.layerX, nativeEvent.layerY];
+        stage.removeChild(this.selectedArea.graph);
+        const { startPoint, endPoint } = this.selectedArea;
+        if (!nativeEvent.shiftKey) return;
+        // 定义这次选定的单位
+        this.multipleUnits = Array.from(this.units.values()).filter(
+          unit =>
+            unit.x > Math.min(startPoint[0], endPoint[0]) &&
+            unit.x < Math.max(startPoint[0], endPoint[0]) &&
+            unit.y > Math.min(startPoint[1], endPoint[1]) &&
+            unit.y < Math.max(startPoint[1], endPoint[1])
+        );
+        this.selectedUnit = this.$options.data().selectedUnit;
+      });
+    },
+
     // 绑定快捷按键
     bindShortCut() {
       document.addEventListener("keydown", event => {
@@ -920,6 +1021,7 @@ export default {
         }
       });
     },
+
     doTicker(event) {
       // 更新舞台将呈现下一帧
       if (!event.paused) {
@@ -927,10 +1029,12 @@ export default {
         this.render();
       }
     },
+
     render() {
       // 更新舞台将呈现下一帧
       this.stage.update();
     },
+
     syncSocket() {
       // 单兵态势
       emitter.on(EventType.ACTORSTATE, data => {
@@ -1286,6 +1390,7 @@ export default {
       }
       this.logs.unshift(info);
     },
+
     // 使用行为树
     handleUseBehaviorTree() {
       this.openBehavior = !this.openBehavior;
@@ -1342,6 +1447,7 @@ export default {
         cmd: this.selectedUnit.status
       });
     },
+
     // 切换播放和暂停
     handleSwitchPlaying() {
       // 定义变量
@@ -1373,6 +1479,7 @@ export default {
 
       this.handleSendCommand(status);
     },
+
     handleSendCommand(eventName, command) {
       // 字符处理成JSON对象
       if (typeof command === "string") {
