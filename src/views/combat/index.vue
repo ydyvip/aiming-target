@@ -122,8 +122,8 @@
         rows="6"
         cols="100"
         type="text"
-        v-model="customCombatUnitsContext"
-        placeholder="输入[]初始化单位"
+        v-model="customInitDataContext"
+        placeholder="输入{}初始化initData对象"
       />
       <input
         class="btn"
@@ -163,7 +163,7 @@ import { actionRecords } from "@/assets/story/records-2";
 import { combatUnits } from "./combatUnits";
 // 行为树
 import { BehaviorTree, Blackboard } from "@/behavior";
-import { UnitFightAttack } from "@/assets/behaviors/soldier";
+import { UnitFightAttack } from "@/assets/behaviors";
 
 const visualDistance = 40; // 视线距离
 const visualAngle = 124; // 视线夹角
@@ -182,7 +182,7 @@ const STATUSINDEX = {
   c2s_aim: "瞄准",
   c2s_carry: "手持"
 };
-const MAPTYPES = ["soldier", "islands"];
+const MAPTYPES = ["single_soldier", "islands"];
 
 const TIMESPEEDSCALES = [1, 2, 4, 8]; // 加速等级
 
@@ -229,7 +229,7 @@ export default {
       logs: [], // 日志内容
       logMax: 8,
       behaviorStack: [], // 行为指令栈存
-      customCombatUnitsContext: null, // 自定义想定单位
+      customInitDataContext: null, // 自定义初始化数据
 
       // todo: test properties
       waypointsLine: null,
@@ -259,19 +259,19 @@ export default {
       return this.logs.sort((a, b) => a.timestamp - b.timestamp);
     },
     // 自定义单位
-    customCombatUnits: {
+    customInitData: {
       get() {
         // 字符处理成JSON对象
-        const command = this.customCombatUnitsContext;
+        const initData = this.customInitDataContext;
         try {
-          return new Function("return " + command)();
+          return new Function("return " + initData)();
         } catch (error) {
           return null;
         }
       }
     },
     unitsConfig() {
-      return this.formatUnitsData(this.customCombatUnits || combatUnits);
+      return this.formatUnitsData(combatUnits);
     }
   },
   filters: {
@@ -281,7 +281,7 @@ export default {
     },
     // 行为解析
     behaviorFilter(behaviors) {
-      return behaviors.map(({ id, type, targetId, finished }) => {
+      return behaviors.map(({ id, type, targetId }) => {
         if (id) {
           let info = `${id}: Idling`;
           switch (type) {
@@ -1039,7 +1039,7 @@ export default {
           this.selectedArea.endPoint = [nativeEvent.layerX, nativeEvent.layerY];
           this.selectedArea.graph = this.drawRoundRect(
             "selectedArea",
-            "0xffffff",
+            "0x414141",
             "0xffffff",
             this.selectedArea.startPoint[0],
             this.selectedArea.startPoint[1],
@@ -1553,26 +1553,46 @@ export default {
       switch (eventName) {
         case "create":
           if (!this.isCreated) {
-            // 绘制单位
-            this.unitsConfig.map(params => {
-              params.id = params.unitId;
-              params.name = params.unitName;
-              // 组装想定数据
-              assumptionData.initData[params.group] &&
-                assumptionData.initData[params.group].push(params);
-              // 绘制单位
-              this.paintingUnit(params);
-            });
-            // 推演速度
-            assumptionData.initData.timeSpeed = this.timeSpeed;
+            if (this.customInitData) {
+              this.formatUnitsData(this.customInitData.reds).map(params => {
+                params.id = params.unitId;
+                params.name = params.unitName;
+                params.group = "reds";
+                params.visualColor = "0xff0000";
+                // 绘制单位
+                this.paintingUnit(params);
+              });
+              this.formatUnitsData(this.customInitData.blues).map(params => {
+                params.id = params.unitId;
+                params.name = params.unitName;
+                params.group = "blues";
+                params.visualColor = "0x0000ff";
+                // 绘制单位
+                this.paintingUnit(params);
+              });
+              assumptionData.initData = this.customInitData;
+            } else {
+              this.unitsConfig.map(params => {
+                params.id = params.unitId;
+                params.name = params.unitName;
+                // 组装想定数据
+                assumptionData.initData[params.group] &&
+                  assumptionData.initData[params.group].push(params);
+                // 绘制单位
+                this.paintingUnit(params);
+              });
+              // 推演速度
+              assumptionData.initData.timeSpeed = this.timeSpeed;
+            }
 
             // 回放
-            assumptionData.initData.playback = this.playback;
+            assumptionData.playback = this.playback;
 
             // 锁定单位
             if (this.currentUnitId) {
               this.selectedUnit = this.units.get(this.currentUnitId);
             }
+
             command = assumptionData;
             this.isCreated = true;
           }
@@ -1600,8 +1620,8 @@ export default {
       //       break;
       //   }
       // }
-      console.log("SEND_CMD：", command);
-      // console.log("SEND_CMD：", JSON.stringify(command));
+      // console.log("SEND_CMD：", command);
+      console.log("SEND_CMD：", JSON.stringify(command));
       // todo: 捕获条件
       const unitIds = [this.currentUnitId];
       // 记录指令
