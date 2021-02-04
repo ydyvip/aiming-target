@@ -37,23 +37,7 @@
         :value="!isStarted ? '开始对抗' : `当前${timeSpeed}倍速`"
         @click="handleSwitchStart()"
       />
-      <input
-        class="btn"
-        type="text"
-        v-model="currentAssumpId"
-        placeholder="输入房间想定ID"
-      />
-      <input
-        class="btn"
-        type="button"
-        value="加入房间"
-        @click="
-          handleSendCommand('join', {
-            assumpId: currentAssumpId,
-            actorId: '101'
-          })
-        "
-      />
+
       <input
         class="btn"
         type="button"
@@ -101,7 +85,7 @@
     <div class="c-controls">
       <textarea
         class="btn"
-        rows="10"
+        rows="6"
         cols="100"
         type="text"
         v-model="currentCmd"
@@ -132,7 +116,33 @@
         @click="handleUseBehaviorTree()"
       />
     </div>
-
+    <div class="c-controls">
+      <textarea
+        class="btn"
+        rows="6"
+        cols="100"
+        type="text"
+        v-model="customCombatUnitsContext"
+        placeholder="输入[]初始化单位"
+      />
+      <input
+        class="btn"
+        type="text"
+        v-model="currentAssumpId"
+        placeholder="输入房间想定ID"
+      />
+      <input
+        class="btn"
+        type="button"
+        value="加入房间"
+        @click="
+          handleSendCommand('join', {
+            assumpId: currentAssumpId,
+            actorId: '101'
+          })
+        "
+      />
+    </div>
     <ul class="c-logs">
       <li v-for="(log, i) in sortLogs" :key="i">
         {{ log }}
@@ -172,6 +182,7 @@ const STATUSINDEX = {
   c2s_aim: "瞄准",
   c2s_carry: "手持"
 };
+const MAPTYPES = ["soldier", "islands"];
 
 const TIMESPEEDSCALES = [1, 2, 4, 8]; // 加速等级
 
@@ -218,6 +229,7 @@ export default {
       logs: [], // 日志内容
       logMax: 8,
       behaviorStack: [], // 行为指令栈存
+      customCombatUnitsContext: null, // 自定义想定单位
 
       // todo: test properties
       waypointsLine: null,
@@ -240,11 +252,26 @@ export default {
     currentUnitId() {
       return this.$route.query.id || 0;
     },
+    mapType() {
+      return this.$route.query.map;
+    },
     sortLogs() {
       return this.logs.sort((a, b) => a.timestamp - b.timestamp);
     },
+    // 自定义单位
+    customCombatUnits: {
+      get() {
+        // 字符处理成JSON对象
+        const command = this.customCombatUnitsContext;
+        try {
+          return new Function("return " + command)();
+        } catch (error) {
+          return null;
+        }
+      }
+    },
     unitsConfig() {
-      return this.formatUnitsData(combatUnits);
+      return this.formatUnitsData(this.customCombatUnits || combatUnits);
     }
   },
   filters: {
@@ -323,33 +350,36 @@ export default {
 
     // 加载地图
     initMap(imgfile, width, height) {
-      const image = new Image();
-      image.src = imgfile;
-      image.onload = onImageLoad;
       const backgroudContainer = new createjs.Container(); // 绘制外部容器
+      const mapType = this.mapType;
 
-      this.stage.addChild(backgroudContainer);
-      function onImageLoad(event) {
-        let bitmap = new createjs.Bitmap(event.target);
-        bitmap.x = (width - bitmap.getBounds().width) >> 1;
-        bitmap.y = (height - bitmap.getBounds().height) >> 1;
-        bitmap.setTransform(
-          0,
-          0,
-          width / bitmap.getBounds().width,
-          height / bitmap.getBounds().height
-        );
+      if (mapType && MAPTYPES.includes(mapType)) {
+        const bitmap = this.paintingMap(mapType, width, height);
         backgroudContainer.addChild(bitmap);
-      }
+      } else {
+        const image = new Image();
+        image.src = imgfile;
+        image.onload = onImageLoad;
 
-      // 绘制障碍物
-      // this.envConfig.circulars.map(params => {
-      //   this.paintingObstacle(params);
-      // });
+        function onImageLoad(event) {
+          let bitmap = new createjs.Bitmap(event.target);
+          bitmap.x = (width - bitmap.getBounds().width) >> 1;
+          bitmap.y = (height - bitmap.getBounds().height) >> 1;
+          bitmap.setTransform(
+            0,
+            0,
+            width / bitmap.getBounds().width,
+            height / bitmap.getBounds().height
+          );
+          backgroudContainer.addChild(bitmap);
+        }
+      }
+      this.stage.addChild(backgroudContainer);
 
       // 绑定鼠标操作
-      this.bindEvent(backgroudContainer);
+      this.bindEvent(this.stage);
     },
+
     // 初始化bt
     initBT() {
       const { trees } = UnitFightAttack || {};
@@ -460,13 +490,14 @@ export default {
     },
 
     // 绘制圆形
-    drawCircle(name, color, fillColor, density) {
+    drawCircle(name, color, fillColor, radius) {
       let shape = new createjs.Shape();
       shape.name = name;
       shape.graphics
         .beginFill(createjs.Graphics.getRGB(fillColor))
         .beginStroke(createjs.Graphics.getRGB(color))
-        .drawCircle(0, 0, density);
+        .drawCircle(0, 0, radius)
+        .closePath();
       return shape;
     },
 
@@ -618,13 +649,43 @@ export default {
         `${size}px Arial`,
         createjs.Graphics.getRGB(color)
       );
-
+      text.name = name;
       text.x = offsetX;
       text.y = offsetY;
       // 是否按基线绘制
       // text.textBaseline = "alphabetic";
       text.textBaseline = "top";
       return text;
+    },
+
+    // 绘制地图
+    paintingMap(type, width, height) {
+      const blocksContainer = new createjs.Container();
+      try {
+        let shape = new createjs.Shape();
+        shape.graphics.clear();
+        const jsonMap = require(`@/assets/json-maps/${type}.json`);
+        const mapMatrix = jsonMap;
+        mapMatrix
+          .filter(point => point.v === 0)
+          .forEach((point, index) => {
+            shape.graphics.arc(
+              point.x * mapScale,
+              point.y * mapScale,
+              1,
+              0,
+              Math.PI * 2
+            );
+            shape.graphics.beginFill("0x000000");
+          });
+        shape.graphics.closePath();
+        shape.cache(0, 0, width, height);
+        blocksContainer.addChild(shape);
+      } catch (error) {
+        console.warn(error);
+      }
+
+      return blocksContainer;
     },
 
     // 绘制目标单位
@@ -682,7 +743,12 @@ export default {
       this.units.set(unitId, unitContainer);
 
       // 绘制单位
-      const circle = this.drawCircle("circle", unitId, "0xffffff", density);
+      const circle = this.drawCircle(
+        `unit${unitId}`,
+        unitId,
+        "0xffffff",
+        density
+      );
 
       // 绘制方向指示线
       const headTo = this.drawLine("headTo", 10, "0x000000", 2);
@@ -786,23 +852,23 @@ export default {
     },
 
     // 绘制障碍物体
-    paintingObstacle(params) {
-      const { name, type, r, w, h, position } = params;
-      let obstacle;
+    paintingObstacle(name, type, x, y, params = { w: 0, h: 0, r: 0 }) {
+      let obstacle = null;
+      const { w, h, r } = params;
       switch (type) {
         case "circle":
           obstacle = this.drawCircle(name, "0x000000", "0xe1e1e1", r);
-          obstacle.x = position.x;
-          obstacle.y = position.y;
-          this.stage.addChild(obstacle);
+          obstacle.x = x;
+          obstacle.y = y;
           break;
         case "rect":
           obstacle = this.drawRect(name, "0x000000", "0xe1e1e1", w, h);
-          obstacle.x = position.x;
-          obstacle.y = position.y;
-          this.stage.addChild(obstacle);
+          obstacle.x = x;
+          obstacle.y = y;
           break;
       }
+      // obstacle.cache(x, y, w, h);
+      return obstacle;
     },
 
     // 触发动作
@@ -860,9 +926,9 @@ export default {
     },
 
     // 绑定事件
-    bindEvent(graph) {
-      graph.on(
-        "mousedown",
+    bindEvent(stage) {
+      stage.on(
+        "stagemousedown",
         event => {
           const { nativeEvent, stageX, stageY } = event;
           if (nativeEvent.shiftKey) return;
@@ -966,12 +1032,9 @@ export default {
       stage.on("stagemousedown", event => {
         const { nativeEvent } = event;
         if (!nativeEvent.shiftKey) return;
-        console.log("stagemousedown", nativeEvent);
         this.selectedArea.startPoint = [nativeEvent.layerX, nativeEvent.layerY];
-
         moveListener = stage.on("stagemousemove", moveEvent => {
           const { nativeEvent } = moveEvent;
-          console.log("stagemousemove");
           stage.removeChild(this.selectedArea.graph);
           this.selectedArea.endPoint = [nativeEvent.layerX, nativeEvent.layerY];
           this.selectedArea.graph = this.drawRoundRect(
@@ -1411,6 +1474,7 @@ export default {
         });
       } else {
         this.handleSendCommand("start");
+        createjs.Ticker.paused = false;
       }
     },
 
