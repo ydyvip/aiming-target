@@ -184,7 +184,7 @@ const STATUSINDEX = {
 };
 const MAPTYPES = ["single_soldier", "islands"];
 
-const TIMESPEEDSCALES = [1, 2, 4, 8]; // 加速等级
+const TIMESPEEDSCALES = [1, 2, 4, 8, 5000, 16000]; // 加速等级
 
 export default {
   name: "Combat",
@@ -253,7 +253,8 @@ export default {
       return this.$route.query.id || 0;
     },
     mapType() {
-      return this.$route.query.map;
+      const mapType = this.$route.query.map;
+      return MAPTYPES.includes(mapType) && mapType;
     },
     sortLogs() {
       return this.logs.sort((a, b) => a.timestamp - b.timestamp);
@@ -353,7 +354,7 @@ export default {
       const backgroudContainer = new createjs.Container(); // 绘制外部容器
       const mapType = this.mapType;
 
-      if (mapType && MAPTYPES.includes(mapType)) {
+      if (mapType) {
         const bitmap = this.paintingMap(mapType, width, height);
         backgroudContainer.addChild(bitmap);
       } else {
@@ -658,6 +659,15 @@ export default {
       return text;
     },
 
+    // 绘制圆弧
+    drawArc(name, color, fillColor) {
+      let shape = new createjs.Shape();
+      shape.name = name;
+      shape.graphics.arcTo(10, 10, 20, 20, 5).closePath();
+
+      return shape;
+    },
+
     // 绘制地图
     paintingMap(type, width, height) {
       const blocksContainer = new createjs.Container();
@@ -791,6 +801,11 @@ export default {
         14
       );
 
+      // todo: 探测范围
+      const detectArea = this.drawArc(
+        "detectArea"
+      );
+
       // 死亡标志加入容器 0
       unitContainer.addChild(deathMark);
       // 目视扇区加入容器 1
@@ -803,6 +818,8 @@ export default {
       unitContainer.addChild(unitLabel);
       // 血条加入容器5
       unitContainer.addChild(hpContainer);
+      // 探测加入容器6
+      unitContainer.addChild(detectArea);
 
       // 初始化是否不显示
       // unitContainer.alpha = 0;
@@ -1584,7 +1601,8 @@ export default {
               // 推演速度
               assumptionData.initData.timeSpeed = this.timeSpeed;
             }
-
+            // 场景
+            assumptionData.initData.mapType = this.mapType || MAPTYPES[0];
             // 回放
             assumptionData.playback = this.playback;
 
@@ -1620,8 +1638,8 @@ export default {
       //       break;
       //   }
       // }
-      // console.log("SEND_CMD：", command);
-      console.log("SEND_CMD：", JSON.stringify(command));
+      console.log("SEND_CMD：", command);
+      // console.log("SEND_CMD：", JSON.stringify(command));
       // todo: 捕获条件
       const unitIds = [this.currentUnitId];
       // 记录指令

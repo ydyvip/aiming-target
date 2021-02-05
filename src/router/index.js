@@ -11,7 +11,11 @@ export default new Router({
       name: "Combat",
       component: () => import("@/views/combat")
     },
-
+    {
+      path: "/intertwine",
+      name: "Intertwine",
+      component: () => import("@/views/intertwine")
+    },
     {
       path: "/",
       redirect: "/combat"
