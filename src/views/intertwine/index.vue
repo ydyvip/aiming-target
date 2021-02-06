@@ -2,7 +2,7 @@
   <div>
     <canvas
       id="canvasIntertwine"
-      style="width: 800px; height: 600px; border:1px solid #e1e1e1;"
+      style="border:1px solid #e1e1e1;"
       @contextmenu.prevent
     ></canvas>
   </div>
@@ -11,30 +11,63 @@
 function randomIntFromInterval(mn, mx) {
   return ~~(Math.random() * (mx - mn + 1) + mn);
 }
+function Circle() {
+  const canvas = document.getElementById("canvasIntertwine");
+  const ctx = canvas.getContext("2d");
+  this.r = randomIntFromInterval(25, 170);
+  this.x = randomIntFromInterval(this.r, this.cw - this.r);
+  this.y = randomIntFromInterval(this.r, this.ch - this.r);
+
+  this.vx = randomIntFromInterval(25, 100) / 100;
+  this.vy = randomIntFromInterval(25, 100) / 100;
+
+  this.update = function() {
+    this.edges();
+    this.x += this.vx;
+    this.y += this.vy;
+  };
+
+  this.edges = function() {
+    if (this.x < this.r || this.x > this.cw - this.r) {
+      this.vx *= -1;
+    }
+    if (this.y < this.r || this.y > this.ch - this.r) {
+      this.vy *= -1;
+    }
+  };
+
+  this.draw = function() {
+    ctx.strokeStyle = "#ccc";
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.r, 0, 2 * Math.PI);
+    ctx.stroke();
+  };
+}
 
 export default {
   data() {
     return {
-      cw: 800,
-      ch: 600,
-      cx: 0,
-      cy: 0,
+      cw: null,
+      ch: null,
+      cx: null,
+      cy: null,
+      ctx: null,
       requestId: null,
       circlesRy: [],
       circlesNum: 15
     };
   },
+
   mounted() {
-    var canvas = document.getElementById("canvasIntertwine");
-    var ctx = canvas.getContext("2d");
+    const canvas = document.getElementById("canvasIntertwine");
+    this.ctx = canvas.getContext("2d");
 
-    this.cx = this.cw / 2;
-    this.cy = this.ch / 2;
-
-    ctx.fillStyle = "#000";
+    (this.cw = canvas.width = window.innerWidth), (this.cx = this.cw / 2);
+    (this.ch = canvas.height = window.innerHeight), (this.cy = this.ch / 2);
+    this.ctx.fillStyle = "#000";
 
     for (var i = 0; i < this.circlesNum; i++) {
-      var circle = new this.Circle();
+      var circle = new Circle();
       this.circlesRy.push(circle);
     }
     setTimeout(() => {
@@ -47,7 +80,7 @@ export default {
     init() {
       this.circlesRy.length = 0;
       for (var i = 0; i < this.circlesNum; i++) {
-        var circle = new this.Circle();
+        var circle = new Circle();
         this.circlesRy.push(circle);
       }
 
@@ -59,10 +92,8 @@ export default {
       this.draw();
     },
     draw() {
-      var canvas = document.getElementById("canvasIntertwine");
-      var ctx = canvas.getContext("2d");
       this.requestId = window.requestAnimationFrame(this.draw);
-      ctx.clearRect(0, 0, this.cw, this.ch);
+      this.ctx.clearRect(0, 0, this.cw, this.ch);
       for (var i = 0; i < this.circlesRy.length; i++) {
         var c = this.circlesRy[i];
         c.update();
@@ -79,38 +110,7 @@ export default {
         }
       }
     },
-    Circle() {
-      this.r = randomIntFromInterval(25, 170);
-      this.x = randomIntFromInterval(this.r, this.cw - this.r);
-      this.y = randomIntFromInterval(this.r, this.ch - this.r);
 
-      this.vx = randomIntFromInterval(25, 100) / 100;
-      this.vy = randomIntFromInterval(25, 100) / 100;
-
-      this.update = function() {
-        this.edges();
-        this.x += this.vx;
-        this.y += this.vy;
-      };
-
-      this.edges = function() {
-        if (this.x < this.r || this.x > this.cw - this.r) {
-          this.vx *= -1;
-        }
-        if (this.y < this.r || this.y > this.ch - this.r) {
-          this.vy *= -1;
-        }
-      };
-
-      this.draw = () => {
-        var canvas = document.getElementById("canvasIntertwine");
-        var ctx = canvas.getContext("2d");
-        ctx.strokeStyle = "#ccc";
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.r, 0, 2 * Math.PI);
-        ctx.stroke();
-      };
-    },
     getIntersection(p1, p2, d) {
       var p3 = {}; // middle point
       var p4 = {}; // intersection 1
@@ -140,12 +140,10 @@ export default {
     },
 
     markPoint(p) {
-      var canvas = document.getElementById("canvasIntertwine");
-      var ctx = canvas.getContext("2d");
-      ctx.fillStyle = "#000";
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, 2, 0, 2 * Math.PI);
-      ctx.fill();
+      this.ctx.fillStyle = "#000";
+      this.ctx.beginPath();
+      this.ctx.arc(p.x, p.y, 2, 0, 2 * Math.PI);
+      this.ctx.fill();
     }
   }
 };

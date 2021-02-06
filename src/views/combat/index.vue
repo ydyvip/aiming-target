@@ -186,6 +186,20 @@ const MAPTYPES = ["single_soldier", "islands"];
 
 const TIMESPEEDSCALES = [1, 2, 4, 8, 5000, 16000]; // 加速等级
 
+const COMPOSIEOPERATION = [
+  "source-over", //  0
+  "source-in", //  1
+  "source-out", //  2
+  "source-atop", //  3
+  "destination-over", //  4
+  "destination-in", //  5
+  "destination-out", //  6
+  "destination-atop", //  7
+  "lighter", //  8
+  "darker", //  9
+  "copy", // 10
+  "xor" // 11
+];
 export default {
   name: "Combat",
   data() {
@@ -313,9 +327,20 @@ export default {
     const { xsize, ysize } = this.resizeToFit("canvasWrap");
     this.init(xsize, ysize);
     this.initMap(mapImg, xsize, ysize);
+    // 创建探测层
+    this.initLayer("detectAreaForReds");
+    // 创建探测层
+    this.initLayer("detectAreaForBlues");
 
     this.syncSocket();
     this.bindShortCut();
+
+    this.stage.on("tick", () => {
+      // 绘制探测图层
+      this.pantingLayer("detectAreaForReds", "reds");
+      // 绘制探测图层
+      this.pantingLayer("detectAreaForBlues", "blues");
+    });
 
     window.onresize = () => {
       console.log("resize");
@@ -379,6 +404,13 @@ export default {
 
       // 绑定鼠标操作
       this.bindEvent(this.stage);
+    },
+
+    // 初始化图层
+    initLayer(name) {
+      const layer = new createjs.Container();
+      layer.name = name;
+      this.stage.addChild(layer);
     },
 
     // 初始化bt
@@ -491,25 +523,48 @@ export default {
     },
 
     // 绘制圆形
-    drawCircle(name, color, fillColor, radius) {
+    drawCircle(name, color, fillColor, x, y, radius, operation = 0) {
       let shape = new createjs.Shape();
       shape.name = name;
       shape.graphics
         .beginFill(createjs.Graphics.getRGB(fillColor))
         .beginStroke(createjs.Graphics.getRGB(color))
-        .drawCircle(0, 0, radius)
+        .drawCircle(x, y, radius)
         .closePath();
+      shape.compositeOperation = COMPOSIEOPERATION[operation];
       return shape;
     },
 
     // 绘制矩形
-    drawRect(name, color, fillColor, width, height) {
+    drawRect(name, color, fillColor, x, y, width, height, operation = 0) {
       let shape = new createjs.Shape();
       shape.name = name;
       shape.graphics
         .beginFill(createjs.Graphics.getRGB(fillColor))
         .beginStroke(createjs.Graphics.getRGB(color))
-        .drawRect(0, 0, width, height);
+        .drawRect(x, y, width, height);
+      shape.compositeOperation = COMPOSIEOPERATION[operation];
+      return shape;
+    },
+
+    // 绘制圆弧
+    drawArc(
+      name,
+      color,
+      x,
+      y,
+      radius,
+      startAngle = 0,
+      endAngle = Math.PI * 2,
+      operation = 0
+    ) {
+      let shape = new createjs.Shape();
+      shape.name = name;
+      shape.graphics.moveTo(x, y);
+      shape.graphics.beginStroke(createjs.Graphics.getRGB(color));
+      shape.graphics.arc(x, y, radius, startAngle, endAngle);
+      shape.graphics.endStroke().closePath();
+      shape.compositeOperation = COMPOSIEOPERATION[operation];
       return shape;
     },
 
@@ -659,15 +714,6 @@ export default {
       return text;
     },
 
-    // 绘制圆弧
-    drawArc(name, color, fillColor) {
-      let shape = new createjs.Shape();
-      shape.name = name;
-      shape.graphics.arcTo(10, 10, 20, 20, 5).closePath();
-
-      return shape;
-    },
-
     // 绘制地图
     paintingMap(type, width, height) {
       const blocksContainer = new createjs.Container();
@@ -755,8 +801,10 @@ export default {
       // 绘制单位
       const circle = this.drawCircle(
         `unit${unitId}`,
-        unitId,
+        "0x000000",
         "0xffffff",
+        0,
+        0,
         density
       );
 
@@ -801,11 +849,6 @@ export default {
         14
       );
 
-      // todo: 探测范围
-      const detectArea = this.drawArc(
-        "detectArea"
-      );
-
       // 死亡标志加入容器 0
       unitContainer.addChild(deathMark);
       // 目视扇区加入容器 1
@@ -818,8 +861,6 @@ export default {
       unitContainer.addChild(unitLabel);
       // 血条加入容器5
       unitContainer.addChild(hpContainer);
-      // 探测加入容器6
-      unitContainer.addChild(detectArea);
 
       // 初始化是否不显示
       // unitContainer.alpha = 0;
@@ -861,10 +902,46 @@ export default {
 
       // 动态更新数据
       unitContainer.on("tick", eventTick => {
-        const { currentTarget, timeStamp } = eventTick;
+        const { currentTarget } = eventTick;
         const healthPointBar = currentTarget.getChildByName("healthPointBar");
         unitLabel.rotation = -currentTarget.rotation;
         healthPointBar.rotation = -currentTarget.rotation;
+      });
+    },
+
+    // 绘制探测层
+    pantingLayer(name, group) {
+      const layer = this.stage.getChildByName(name);
+      layer.removeAllChildren();
+
+      const groupOfUnits = Array.from(this.units.values()).filter(
+        unit => unit.group === group
+      );
+      groupOfUnits.forEach(unit => {
+        if (unit.hp === 0) return;
+        const area = this.drawCircle(
+          `${name}sOf${unit.unitId}`,
+          unit.group === "reds" ? "0xff0000" : "0x0000ff",
+          unit.group === "reds" ? "0xff0000" : "0x0000ff",
+          unit.x,
+          unit.y,
+          80,
+          0
+        );
+        layer.addChild(area);
+      });
+      groupOfUnits.forEach(unit => {
+        if (unit.hp === 0) return;
+        const areaComposite = this.drawCircle(
+          `${name}sCompositeOf${unit.unitId}`,
+          unit.group === "reds" ? "0xff0000" : "0x0000ff",
+          unit.group === "reds" ? "0xff0000" : "0x0000ff",
+          unit.x,
+          unit.y,
+          79,
+          6
+        );
+        layer.addChild(areaComposite);
       });
     },
 
@@ -874,12 +951,12 @@ export default {
       const { w, h, r } = params;
       switch (type) {
         case "circle":
-          obstacle = this.drawCircle(name, "0x000000", "0xe1e1e1", r);
+          obstacle = this.drawCircle(name, "0x000000", "0xe1e1e1", 0, 0, r);
           obstacle.x = x;
           obstacle.y = y;
           break;
         case "rect":
-          obstacle = this.drawRect(name, "0x000000", "0xe1e1e1", w, h);
+          obstacle = this.drawRect(name, "0x000000", "0xe1e1e1", 0, 0, w, h);
           obstacle.x = x;
           obstacle.y = y;
           break;
@@ -956,6 +1033,8 @@ export default {
             "clickMark",
             "0xffffff",
             "0x000000",
+            0,
+            0,
             4
           );
           mouseMark.x = stageX;
@@ -1322,6 +1401,8 @@ export default {
               "dotsTrack",
               "0xffffff",
               "0x000000",
+              0,
+              0,
               2
             );
             dotsTrack.x = x * mapScale;
