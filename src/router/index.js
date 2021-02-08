@@ -17,6 +17,11 @@ export default new Router({
       component: () => import("@/views/intertwine")
     },
     {
+      path: "/circles",
+      name: "Circles",
+      component: () => import("@/views/overlaping-circles")
+    },
+    {
       path: "/",
       redirect: "/combat"
     }
