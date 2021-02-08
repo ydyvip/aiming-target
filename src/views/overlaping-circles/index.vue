@@ -1,154 +1,178 @@
 <template>
   <div>
     <canvas
-      id="canvasIntertwine"
+      id="canvasOverlaping"
       style="border:1px solid #e1e1e1;"
       @contextmenu.prevent
     ></canvas>
   </div>
 </template>
 <script>
-var circlesRy = [];
-var circlesNum = 15;
-var requestId = null;
-var cw = window.innerWidth;
-var ch = window.innerHeight;
+function intersectLine(a, b) {
+  const [s0, e0, s1, e1] = [a.start, a.end, b.start, b.end],
+    s = Math.max(s0, s1),
+    e = Math.min(e0, e1);
+  if (e <= s) return { start: 0, end: 0 };
+  return { start: s, end: e };
+}
 
-function randomIntFromInterval(mn, mx) {
-  return ~~(Math.random() * (mx - mn + 1) + mn);
+class SectorSet {
+  constructor(sectors) {
+    this.sets = sectors;
+  }
+
+  get() {
+    return this.sets;
+  }
+
+  add(other) {
+    let acc = [];
+    for (let mine of this.sets) {
+      for (let others of other.get()) {
+        acc.push(intersectLine(mine, others));
+      }
+    }
+    this.sets = acc.filter(sector => sector.start !== sector.end);
+    return this;
+  }
 }
 
 class Circle {
-  constructor(ctx) {
-    this.ctx = ctx;
-    this.r = randomIntFromInterval(25, 170);
-    this.x = randomIntFromInterval(this.r, cw - this.r);
-    this.y = randomIntFromInterval(this.r, ch - this.r);
-    this.vx = randomIntFromInterval(25, 100) / 100;
-    this.vy = randomIntFromInterval(25, 100) / 100;
+  CONTAINS = 0;
+  CONTAINED = 1;
+  DISJOINT = 2;
+  INTERSECT = 3;
+
+  constructor(name, x, y, r) {
+    this.name = name;
+    this.x = x;
+    this.y = y;
+    this.r = r;
   }
 
-  update() {
-    this.edges();
-    this.x += this.vx;
-    this.y += this.vy;
+  intersect(other) {
+    const [a, b, c, d, r0, r1] = [
+      this.x,
+      this.y,
+      other.x,
+      other.y,
+      this.r,
+      other.r
+    ];
+    const r0sq = Math.pow(r0, 2),
+      r1sq = Math.pow(r1, 2),
+      Dsq = Math.pow(c - a, 2) + Math.pow(d - b, 2),
+      D = Math.pow(Dsq, 0.5);
+    if (D >= r0 + r1) return { type: this.DISJOINT, i1: null, i2: null };
+    if (D <= Math.abs(r0 - r1))
+      return { type: this.CONTAINED, i1: null, i2: null };
+    if (r0 < r1) {
+    } else return { type: this.CONTAINS, i1: null, i2: null };
+
+    const dd =
+        0.25 *
+        Math.pow(
+          (D + r0 + r1) * (D + r0 - r1) * (D - r0 + r1) * (-D + r0 + r1),
+          0.5
+        ),
+      x = (a + c) / 2.0 + ((c - a) * (r0sq - r1sq)) / 2.0 / Dsq,
+      x1 = x + ((2 * (b - d)) / Dsq) * dd,
+      x2 = x - ((2 * (b - d)) / Dsq) * dd,
+      y = (b + d) / 2.0 + ((d - b) * (r0sq - r1sq)) / 2.0 / Dsq,
+      y1 = y - ((2 * (a - c)) / Dsq) * dd,
+      y2 = y + ((2 * (a - c)) / Dsq) * dd;
+    return {
+      type: this.INTERSECT,
+      i1: [x1, y1],
+      i2: [x2, y2]
+    };
   }
 
-  edges() {
-    if (this.x < this.r || this.x > cw - this.r) {
-      this.vx *= -1;
+  angle(point) {
+    const [x0, y0, x, y] = [this.x, this.y, point[0], point[1]];
+    let a = Math.atan2(y - y0, x - x0) + 1.5 * Math.PI;
+    if (a >= 2 * Math.PI) {
+      a -= 2 * Math.PI;
     }
-    if (this.y < this.r || this.y > ch - this.r) {
-      this.vy *= -1;
-    }
+    return (a / Math.PI) * 180;
   }
 
-  draw() {
-    this.ctx.strokeStyle = "#ccc";
-    this.ctx.beginPath();
-    this.ctx.arc(this.x, this.y, this.r, 0, 2 * Math.PI);
-    this.ctx.stroke();
+  sector(other) {
+    const { type, i1, i2 } = this.intersect(other);
+    if (type === this.DISJOINT) return new SectorSet([{ start: 0, end: 360 }]);
+    if (type === this.CONTAINS) return new SectorSet([{ start: 0, end: 360 }]);
+    if (type === this.CONTAINED) return new SectorSet([]);
+    const a1 = this.angle(i1);
+    const a2 = this.angle(i2);
+
+    if (a1 > a2)
+      return new SectorSet([
+        { start: 0, end: a2 },
+        { start: a1, end: 360 }
+      ]);
+    return new SectorSet([{ start: a1, end: a2 }]);
+  }
+
+  outline(others) {
+    let sectors = new SectorSet([{ start: 0, end: 360 }]);
+    console.log(`${this.name}: `, this.r, sectors);
+    for (let other of others) {
+      sectors.add(this.sector(other));
+    }
+    let u = 2 * this.r * Math.PI,
+      total = 0;
+    for (let { start, end } of sectors.get()) {
+      total += ((end - start) / 360) * u;
+    }
+
+    return total;
   }
 }
 
 export default {
   data() {
-    return {
-      ctx: null
-    };
+    return {};
   },
 
   mounted() {
-    const canvas = document.getElementById("canvasIntertwine");
-    this.ctx = canvas.getContext("2d");
+    const canvas = document.getElementById("canvasOverlaping");
+    const ctx = canvas.getContext("2d");
 
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-    this.ctx.fillStyle = "#000";
+    ctx.fillStyle = "#000";
+    // const a = new Circle("a", 150, 100, 40),
+    //   b = new Circle("b", 100, 150, 50),
+    //   c = new Circle("c", 210, 210, 80),
+    //   d = new Circle("d", 260, 100, 90);
+    const a = new Circle("a", 100, 100, 2),
+      b = new Circle("b", 98, 99, 1),
+      c = new Circle("c", 102, 99, 1),
+      d = new Circle("d", 100, 102, 1);
 
-    for (var i = 0; i < circlesNum; i++) {
-      var circle = new Circle(this.ctx);
-      circlesRy.push(circle);
-    }
-    setTimeout(() => {
-      this.init();
-
-      window.addEventListener("resize", this.init, false);
-    }, 15);
+    console.log(this.paintingOutline([a, b, c, d]));
   },
   methods: {
-    init() {
-      const canvas = document.getElementById("canvasIntertwine");
-      circlesRy.length = 0;
-      for (var i = 0; i < circlesNum; i++) {
-        var circle = new Circle(this.ctx);
-        circlesRy.push(circle);
+    paintingOutline(circles) {
+      let total = 0;
+      for (let circle of circles) {
+        const others = circles.filter(other => other !== circle);
+        // 绘制圆形
+        this.drawCircle(circle);
+        // 统计
+        total += circle.outline(others);
       }
 
-      if (requestId) {
-        window.cancelAnimationFrame(requestId);
-        requestId = null;
-      }
-
-      cw = canvas.width = window.innerWidth;
-      ch = canvas.height = window.innerHeight;
-
-      this.draw();
+      return total;
     },
-
-    draw() {
-      requestId = window.requestAnimationFrame(this.draw);
-      this.ctx.clearRect(0, 0, cw, ch);
-      for (var i = 0; i < circlesRy.length; i++) {
-        var c = circlesRy[i];
-        c.update();
-        c.draw();
-      }
-      for (var i = 0; i < circlesRy.length; i++) {
-        var c = circlesRy[i];
-        for (var j = i + 1; j < circlesRy.length; j++) {
-          var c1 = circlesRy[j];
-          var d = this.dist(c, c1);
-          if (d < c.r + c1.r && d > Math.abs(c.r - c1.r)) {
-            this.getIntersection(c, c1, d);
-          }
-        }
-      }
-    },
-
-    getIntersection(p1, p2, d) {
-      var p3 = {}; // middle point
-      var p4 = {}; // intersection 1
-      var p5 = {}; // intersection 2
-
-      var a =
-        (Math.pow(p1.r, 2) - Math.pow(p2.r, 2) + Math.pow(d, 2)) / (2 * d);
-      var h = Math.sqrt(Math.pow(p1.r, 2) - Math.pow(a, 2));
-
-      p3.x = p1.x + (a * (p2.x - p1.x)) / d;
-      p3.y = p1.y + (a * (p2.y - p1.y)) / d;
-
-      p4.x = p3.x + (h * (p2.y - p1.y)) / d;
-      p4.y = p3.y - (h * (p2.x - p1.x)) / d;
-
-      p5.x = p3.x - (h * (p2.y - p1.y)) / d;
-      p5.y = p3.y + (h * (p2.x - p1.x)) / d;
-
-      this.markPoint(p4);
-      this.markPoint(p5);
-    },
-
-    dist(p1, p2) {
-      var dx = p2.x - p1.x;
-      var dy = p2.y - p1.y;
-      return Math.sqrt(dx * dx + dy * dy);
-    },
-
-    markPoint(p) {
-      this.ctx.fillStyle = "#000";
-      this.ctx.beginPath();
-      this.ctx.arc(p.x, p.y, 2, 0, 2 * Math.PI);
-      this.ctx.fill();
+    drawCircle({ x, y, r }) {
+      const canvas = document.getElementById("canvasOverlaping");
+      const ctx = canvas.getContext("2d");
+      ctx.beginPath();
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = "black";
+      ctx.arc(x, y, r, 0, 2 * Math.PI);
+      ctx.stroke();
     }
   }
 };
