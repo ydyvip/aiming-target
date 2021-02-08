@@ -527,7 +527,11 @@ export default {
       let shape = new createjs.Shape();
       shape.name = name;
       shape.graphics
-        .beginFill(createjs.Graphics.getRGB(fillColor))
+        .beginFill(
+          fillColor === "transparent"
+            ? "rgba(0,0,0,0)"
+            : createjs.Graphics.getRGB(fillColor)
+        )
         .beginStroke(createjs.Graphics.getRGB(color))
         .drawCircle(x, y, radius)
         .closePath();

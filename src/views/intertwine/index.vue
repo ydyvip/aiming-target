@@ -8,15 +8,19 @@
   </div>
 </template>
 <script>
+var circlesRy = [];
+var circlesNum = 15;
+var requestId = null;
+var cw = window.innerWidth;
+var ch = window.innerHeight;
 function randomIntFromInterval(mn, mx) {
   return ~~(Math.random() * (mx - mn + 1) + mn);
 }
-function Circle() {
-  const canvas = document.getElementById("canvasIntertwine");
-  const ctx = canvas.getContext("2d");
+
+function Circle(ctx) {
   this.r = randomIntFromInterval(25, 170);
-  this.x = randomIntFromInterval(this.r, this.cw - this.r);
-  this.y = randomIntFromInterval(this.r, this.ch - this.r);
+  this.x = randomIntFromInterval(this.r, cw - this.r);
+  this.y = randomIntFromInterval(this.r, ch - this.r);
 
   this.vx = randomIntFromInterval(25, 100) / 100;
   this.vy = randomIntFromInterval(25, 100) / 100;
@@ -28,10 +32,10 @@ function Circle() {
   };
 
   this.edges = function() {
-    if (this.x < this.r || this.x > this.cw - this.r) {
+    if (this.x < this.r || this.x > cw - this.r) {
       this.vx *= -1;
     }
-    if (this.y < this.r || this.y > this.ch - this.r) {
+    if (this.y < this.r || this.y > ch - this.r) {
       this.vy *= -1;
     }
   };
@@ -47,14 +51,7 @@ function Circle() {
 export default {
   data() {
     return {
-      cw: null,
-      ch: null,
-      cx: null,
-      cy: null,
-      ctx: null,
-      requestId: null,
-      circlesRy: [],
-      circlesNum: 15
+      ctx: null
     };
   },
 
@@ -62,13 +59,13 @@ export default {
     const canvas = document.getElementById("canvasIntertwine");
     this.ctx = canvas.getContext("2d");
 
-    (this.cw = canvas.width = window.innerWidth), (this.cx = this.cw / 2);
-    (this.ch = canvas.height = window.innerHeight), (this.cy = this.ch / 2);
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
     this.ctx.fillStyle = "#000";
 
-    for (var i = 0; i < this.circlesNum; i++) {
-      var circle = new Circle();
-      this.circlesRy.push(circle);
+    for (var i = 0; i < circlesNum; i++) {
+      var circle = new Circle(this.ctx);
+      circlesRy.push(circle);
     }
     setTimeout(() => {
       this.init();
@@ -78,31 +75,35 @@ export default {
   },
   methods: {
     init() {
-      this.circlesRy.length = 0;
-      for (var i = 0; i < this.circlesNum; i++) {
-        var circle = new Circle();
-        this.circlesRy.push(circle);
+      const canvas = document.getElementById("canvasIntertwine");
+      circlesRy.length = 0;
+      for (var i = 0; i < circlesNum; i++) {
+        var circle = new Circle(this.ctx);
+        circlesRy.push(circle);
       }
 
-      if (this.requestId) {
-        window.cancelAnimationFrame(this.requestId);
-        this.requestId = null;
+      if (requestId) {
+        window.cancelAnimationFrame(requestId);
+        requestId = null;
       }
+
+      cw = canvas.width = window.innerWidth;
+      ch = canvas.height = window.innerHeight;
 
       this.draw();
     },
     draw() {
-      this.requestId = window.requestAnimationFrame(this.draw);
-      this.ctx.clearRect(0, 0, this.cw, this.ch);
-      for (var i = 0; i < this.circlesRy.length; i++) {
-        var c = this.circlesRy[i];
+      requestId = window.requestAnimationFrame(this.draw);
+      this.ctx.clearRect(0, 0, cw, ch);
+      for (var i = 0; i < circlesRy.length; i++) {
+        var c = circlesRy[i];
         c.update();
         c.draw();
       }
-      for (var i = 0; i < this.circlesRy.length; i++) {
-        var c = this.circlesRy[i];
-        for (var j = i + 1; j < this.circlesRy.length; j++) {
-          var c1 = this.circlesRy[j];
+      for (var i = 0; i < circlesRy.length; i++) {
+        var c = circlesRy[i];
+        for (var j = i + 1; j < circlesRy.length; j++) {
+          var c1 = circlesRy[j];
           var d = this.dist(c, c1);
           if (d < c.r + c1.r && d > Math.abs(c.r - c1.r)) {
             this.getIntersection(c, c1, d);
