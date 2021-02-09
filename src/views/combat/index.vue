@@ -154,7 +154,8 @@
 <script>
 import createjs from "createjs-npm";
 import socketMap from "@/api/socket";
-import { strLength, getAngle } from "@/utils";
+import { strLength, getAngle, getRadians } from "@/utils";
+import { Circle } from "@/utils/overlaping-circles";
 
 import { EventType, emitter } from "@/EventEmitter";
 import { assumptionData } from "./assumption";
@@ -327,20 +328,20 @@ export default {
     const { xsize, ysize } = this.resizeToFit("canvasWrap");
     this.init(xsize, ysize);
     this.initMap(mapImg, xsize, ysize);
-    // // 创建探测层
-    // this.initLayer("detectAreaForReds");
-    // // 创建探测层
-    // this.initLayer("detectAreaForBlues");
+    // 创建探测层
+    this.initLayer("detectAreaForReds");
+    // 创建探测层
+    this.initLayer("detectAreaForBlues");
 
     this.syncSocket();
     this.bindShortCut();
 
-    // this.stage.on("tick", () => {
-    //   // 绘制探测图层
-    //   this.pantingLayer("detectAreaForReds", "reds");
-    //   // 绘制探测图层
-    //   this.pantingLayer("detectAreaForBlues", "blues");
-    // });
+    this.stage.on("tick", () => {
+      // 绘制探测图层
+      this.pantingLayer("detectAreaForReds", "reds");
+      // 绘制探测图层
+      this.pantingLayer("detectAreaForBlues", "blues");
+    });
 
     window.onresize = () => {
       console.log("resize");
@@ -921,32 +922,41 @@ export default {
       const groupOfUnits = Array.from(this.units.values()).filter(
         unit => unit.group === group
       );
+      const olCircles = [];
+      const shape = new createjs.Shape();
       groupOfUnits.forEach(unit => {
         if (unit.hp === 0) return;
-        const area = this.drawCircle(
-          `${name}sOf${unit.unitId}`,
-          unit.group === "reds" ? "0xff0000" : "0x0000ff",
-          unit.group === "reds" ? "0xff0000" : "0x0000ff",
-          unit.x,
-          unit.y,
-          80,
-          0
+        olCircles.push(
+          new Circle(
+            unit.group,
+            unit.x,
+            unit.y,
+            unit.visualDistance * mapScale * 0.5
+          )
         );
-        layer.addChild(area);
       });
-      groupOfUnits.forEach(unit => {
-        if (unit.hp === 0) return;
-        const areaComposite = this.drawCircle(
-          `${name}sCompositeOf${unit.unitId}`,
-          unit.group === "reds" ? "0xff0000" : "0x0000ff",
-          unit.group === "reds" ? "0xff0000" : "0x0000ff",
-          unit.x,
-          unit.y,
-          79,
-          6
-        );
-        layer.addChild(areaComposite);
-      });
+      for (let circle of olCircles) {
+        const others = olCircles.filter(other => other !== circle);
+        circle.outline(others, (x, y, radius, startAngle, endAngle) => {
+          shape.graphics.moveTo(x, y);
+          shape.graphics.beginStroke(
+            createjs.Graphics.getRGB(
+              circle.name === "reds" ? "0xff0000" : "0x0000ff"
+            )
+          );
+          shape.graphics.arc(
+            x,
+            y,
+            radius,
+            getRadians(startAngle),
+            getRadians(endAngle)
+          );
+          // 虚线圆
+          shape.graphics.setStrokeDash([6, 3], 0);
+          shape.graphics.endStroke().closePath();
+        });
+      }
+      layer.addChild(shape);
     },
 
     // 绘制障碍物体
