@@ -19,8 +19,8 @@
       指令总数:{{ actionRecords.length }};&emsp;已播放指令:{{
         cmdPlayedRecords.length
       }};&emsp;栈存指令:{{ cmdStackRecords.length }};&emsp;坐标:&emsp;x:{{
-        selectedUnit.x | scaleFilter
-      }},&nbsp;y:{{ selectedUnit.y | scaleFilter }}
+        selectedUnit.x / mapScale
+      }},&nbsp;y:{{ selectedUnit.y / mapScale }}
     </p>
     <div class="c-controls">
       <input
@@ -154,7 +154,7 @@
 <script>
 import createjs from "createjs-npm";
 import socketMap from "@/api/socket";
-import { strLength, getAngle, getRadians } from "@/utils";
+import { debounce, strLength, getAngle, getRadians } from "@/utils";
 import { Circle } from "@/utils/overlaping-circles";
 
 import { EventType, emitter } from "@/EventEmitter";
@@ -170,7 +170,6 @@ const visualDistance = 40; // 视线距离
 const visualAngle = 124; // 视线夹角
 
 const mapImg = require("@/assets/map-campaign-2.png"); // 地图背景
-let mapScale = 10; // 放大倍
 
 const TIMEFRAME = 250; // 帧数
 const WEAPONINDEX = {
@@ -221,11 +220,10 @@ export default {
         weaponIndex: 0,
         status: "c2s_carry"
       },
-      // 地图信息
+      // json地图信息
       envConfig: {
-        circulars: [],
-        xsize: 130 * mapScale,
-        ysize: 100 * mapScale
+        xsize: 130,
+        ysize: 100
       },
       // 武器类型
       weaponOptions: WEAPONINDEX,
@@ -264,6 +262,13 @@ export default {
     };
   },
   computed: {
+    // 放大倍数
+    mapScale() {
+      const innerWidth = window.innerWidth;
+      const { xsize } = this.envConfig;
+      // determine the screen scale factor
+      return innerWidth / xsize;
+    },
     currentUnitId() {
       return this.$route.query.id || 0;
     },
@@ -291,10 +296,6 @@ export default {
     }
   },
   filters: {
-    // 比例解析
-    scaleFilter(num) {
-      return num / mapScale;
-    },
     // 行为解析
     behaviorFilter(behaviors) {
       return behaviors.map(({ id, type, targetId }) => {
@@ -327,46 +328,57 @@ export default {
   mounted() {
     const { xsize, ysize } = this.resizeToFit("canvasWrap");
     this.init(xsize, ysize);
-    this.initMap(mapImg, xsize, ysize);
-    // 创建探测层
-    this.initLayer("detectAreaForReds");
-    // 创建探测层
-    this.initLayer("detectAreaForBlues");
 
-    this.syncSocket();
-    this.bindShortCut();
-
-    this.stage.on("tick", () => {
-      // 绘制探测图层
-      this.pantingLayer("detectAreaForReds", "reds");
-      // 绘制探测图层
-      this.pantingLayer("detectAreaForBlues", "blues");
-    });
-
-    window.onresize = () => {
-      console.log("resize");
-      const { xsize, ysize, scale } = this.resizeToFit("canvasWrap");
-
-      // scale the canvas to fit the window
-      // this.stage.canvas.width = xsize;
-      // this.stage.canvas.height = ysize;
-      // scale the stage drawings to fill the canvas
-      // this.stage.scaleX = scale;
-      // this.stage.scaleY = scale;
-    };
+    window.onresize = debounce(() => {
+      const { xsize, ysize } = this.resizeToFit("canvasWrap");
+      // init
+      this.init(xsize, ysize);
+    }, 500);
   },
   destroyed() {
     socketMap.close();
   },
   methods: {
     // 初始化
-    init(width, height) {
+    init(xsize, ysize) {
+      // 重制stage
+      if (this.stage !== null) {
+        console.log("reset", this.stage);
+        this.stage.removeAllChildren();
+        this.stage.removeAllEventListeners();
+        this.stage.clear();
+        // reset data
+        Object.assign(this.$data, this.$options.data());
+      }
+
+      this.initStage(xsize, ysize);
+      this.initMap(mapImg, xsize, ysize);
+      // 创建探测层
+      this.initLayer("detectAreaForReds");
+      // 创建探测层
+      this.initLayer("detectAreaForBlues");
+
+      this.syncSocket();
+      this.bindShortCut();
+
+      this.stage.on("tick", () => {
+        // 绘制探测图层
+        this.pantingLayer("detectAreaForReds", "reds");
+        // 绘制探测图层
+        this.pantingLayer("detectAreaForBlues", "blues");
+      });
+    },
+
+    // 初始化画布
+    initStage(width, height) {
       const canvasStage = document.getElementById("canvasStage");
       canvasStage.width = width;
       canvasStage.height = height;
 
       // 创建一个舞台，得到一个参考的画布
       this.stage = new createjs.Stage(canvasStage);
+
+      // stage声明
       createjs.Touch.enable(this.stage);
       createjs.Ticker.framerate = 60;
       createjs.Ticker.on("tick", this.doTicker);
@@ -423,23 +435,14 @@ export default {
     },
 
     // resize
-    resizeToFit(wrapName, ratio) {
-      const { clientWidth, clientHeight } = this.$refs[wrapName] || {};
+    resizeToFit(wrapName) {
+      const { clientWidth } = this.$refs[wrapName] || {};
       const { xsize, ysize } = this.envConfig;
-
-      // determine the screen scale factor
-      let scaleX = clientWidth / xsize;
-      let scaleY = clientHeight / ysize;
-      if (scaleX <= 1) {
-        mapScale = mapScale * scaleX;
-        return { xsize: xsize * scaleX, ysize: ysize * scaleX, scale: scaleX };
-      }
-      // use the lesser scale to fit the entire canvas on screen
-      // let scale = Math.min(scaleX, scaleY);
-      else {
-        mapScale = mapScale * 1;
-        return { xsize: xsize * 1, ysize: ysize * 1, scale: 1 };
-      }
+      let mapScale = clientWidth / xsize;
+      return {
+        xsize: xsize * mapScale,
+        ysize: ysize * mapScale
+      };
     },
 
     formatUnitsData(units) {
@@ -502,9 +505,9 @@ export default {
       if (Array.isArray(paths))
         paths.forEach((p, i) => {
           if (i === 0) {
-            shape.graphics.moveTo(p.x * mapScale, p.y * mapScale);
+            shape.graphics.moveTo(p.x * this.mapScale, p.y * this.mapScale);
           } else {
-            shape.graphics.lineTo(p.x * mapScale, p.y * mapScale);
+            shape.graphics.lineTo(p.x * this.mapScale, p.y * this.mapScale);
           }
         });
 
@@ -720,8 +723,8 @@ export default {
           .filter(point => point.v === 0)
           .forEach((point, index) => {
             shape.graphics.arc(
-              point.x * mapScale,
-              point.y * mapScale,
+              point.x * this.mapScale,
+              point.y * this.mapScale,
               1,
               0,
               Math.PI * 2
@@ -864,8 +867,8 @@ export default {
         unitContainer.rotation = -180;
       }
 
-      unitContainer.x = position.x * mapScale;
-      unitContainer.y = position.y * mapScale;
+      unitContainer.x = position.x * this.mapScale;
+      unitContainer.y = position.y * this.mapScale;
 
       // 创建blackboard
       const blackboard = new Blackboard();
@@ -920,7 +923,7 @@ export default {
             unit.group,
             unit.x,
             unit.y,
-            unit.visualDistance * mapScale * 0.5
+            unit.visualDistance * this.mapScale * 0.5
           )
         );
       });
@@ -991,7 +994,7 @@ export default {
       // 绘制攻击线
       const aimingTo = this.drawLine(
         "aimingTo",
-        attackDistance * mapScale,
+        attackDistance * this.mapScale,
         unit.visualColor,
         1,
         [6, 3]
@@ -1072,8 +1075,8 @@ export default {
                 actor_position: this.multipleUnits.map(unit => {
                   return {
                     id: unit.unitId,
-                    x: stageX / mapScale,
-                    y: stageY / mapScale
+                    x: stageX / this.mapScale,
+                    y: stageY / this.mapScale
                   };
                 })
               });
@@ -1082,8 +1085,8 @@ export default {
                 id: this.selectedUnit.unitId,
                 cmd: "c2s_move",
                 position: {
-                  x: stageX / mapScale,
-                  y: stageY / mapScale
+                  x: stageX / this.mapScale,
+                  y: stageY / this.mapScale
                 }
               });
             }
@@ -1409,8 +1412,8 @@ export default {
               0,
               2
             );
-            dotsTrack.x = x * mapScale;
-            dotsTrack.y = y * mapScale;
+            dotsTrack.x = x * this.mapScale;
+            dotsTrack.y = y * this.mapScale;
             createjs.Tween.get(dotsTrack, {
               loop: false,
               override: false
@@ -1431,8 +1434,8 @@ export default {
             tween
               .to(
                 {
-                  x: x * mapScale,
-                  y: y * mapScale,
+                  x: x * this.mapScale,
+                  y: y * this.mapScale,
                   rotation: this.parseRotating(unit, rotation)
                 },
                 TIMEFRAME,
