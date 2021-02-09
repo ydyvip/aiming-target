@@ -470,36 +470,24 @@ export default {
     },
 
     // 绘制线条
-    drawLine(name, length, color, stroke = 1, isDash) {
+    drawLine(
+      name,
+      length,
+      color,
+      stroke = 1,
+      dashSegments = [0, 0],
+      dashOffset = 0
+    ) {
       let shape = new createjs.Shape();
       shape.name = name;
       shape.graphics.clear();
       shape.graphics
         .beginStroke(createjs.Graphics.getRGB(color))
         .setStrokeStyle(stroke);
-      if (isDash) {
-        this.drawDashLine(shape.graphics, 0, 0, length, 0, 5);
-      } else {
-        shape.graphics.moveTo(0, 0).lineTo(length, 0);
-      }
-      return shape;
-    },
+      shape.graphics.setStrokeDash(dashSegments, dashOffset);
 
-    // 绘制虚线条
-    drawDashLine(g, x1, y1, x2, y2, dashLength) {
-      let dashLen = dashLength === undefined ? 5 : dashLength,
-        xpos = x2 - x1, // 得到横向的宽度;
-        ypos = y2 - y1, // 得到纵向的高度;
-        numDashes = Math.floor(Math.sqrt(xpos * xpos + ypos * ypos) / dashLen);
-      // 利用正切获取斜边的长度除以虚线长度，得到要分为多少段;
-      for (let i = 0; i < numDashes; i++) {
-        if (i % 2 === 0) {
-          g.moveTo(x1 + (xpos / numDashes) * i, y1 + (ypos / numDashes) * i);
-          // 有了横向宽度和多少段，得出每一段是多长，起点 + 每段长度 * i = 要绘制的起点；
-        } else {
-          g.lineTo(x1 + (xpos / numDashes) * i, y1 + (ypos / numDashes) * i);
-        }
-      }
+      shape.graphics.moveTo(0, 0).lineTo(length, 0);
+      return shape;
     },
 
     // 绘制路径
@@ -584,14 +572,15 @@ export default {
       height,
       radius,
       doFill = true,
-      strokeDash = null
+      dashSegments = [0, 0],
+      dashOffset = 0
     ) {
       let shape = new createjs.Shape();
       shape.name = name;
       doFill && shape.graphics.beginFill(createjs.Graphics.getRGB(fillColor));
 
       shape.graphics.beginStroke(createjs.Graphics.getRGB(color));
-      shape.graphics.setStrokeDash(strokeDash, 0);
+      shape.graphics.setStrokeDash(dashSegments, dashOffset);
       shape.graphics.drawRoundRect(
         x,
         y,
@@ -1005,7 +994,7 @@ export default {
         attackDistance * mapScale,
         unit.visualColor,
         1,
-        true
+        [6, 3]
       );
 
       // 攻击偏转角
