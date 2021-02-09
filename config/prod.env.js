@@ -1,5 +1,5 @@
 "use strict";
 module.exports = {
   NODE_ENV: '"production"',
-  VUE_APP_SOCKET: '"http://10.20.20.24:9090/"'
+  VUE_APP_SOCKET: '"http://192.168.3.101:9090/"'
 };

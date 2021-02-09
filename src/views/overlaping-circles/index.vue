@@ -8,6 +8,7 @@
   </div>
 </template>
 <script>
+import { getRadians } from "@/utils";
 function intersectLine(a, b) {
   const [s0, e0, s1, e1] = [a.start, a.end, b.start, b.end],
     s = Math.max(s0, s1),
@@ -67,7 +68,8 @@ class Circle {
     if (D <= Math.abs(r0 - r1))
       return { type: this.CONTAINED, i1: null, i2: null };
     if (r0 < r1) {
-    } else return { type: this.CONTAINS, i1: null, i2: null };
+    }
+    // else return { type: this.CONTAINS, i1: null, i2: null };
 
     const dd =
         0.25 *
@@ -90,6 +92,7 @@ class Circle {
 
   angle(point) {
     const [x0, y0, x, y] = [this.x, this.y, point[0], point[1]];
+
     let a = Math.atan2(y - y0, x - x0) + 1.5 * Math.PI;
     if (a >= 2 * Math.PI) {
       a -= 2 * Math.PI;
@@ -99,6 +102,7 @@ class Circle {
 
   sector(other) {
     const { type, i1, i2 } = this.intersect(other);
+
     if (type === this.DISJOINT) return new SectorSet([{ start: 0, end: 360 }]);
     if (type === this.CONTAINS) return new SectorSet([{ start: 0, end: 360 }]);
     if (type === this.CONTAINED) return new SectorSet([]);
@@ -113,15 +117,23 @@ class Circle {
     return new SectorSet([{ start: a1, end: a2 }]);
   }
 
-  outline(others) {
+  outline(others, func) {
     let sectors = new SectorSet([{ start: 0, end: 360 }]);
-    console.log(`${this.name}: `, this.r, sectors);
     for (let other of others) {
       sectors.add(this.sector(other));
     }
+
     let u = 2 * this.r * Math.PI,
       total = 0;
     for (let { start, end } of sectors.get()) {
+      console.log(`${this.name}: `, this.r, start, end);
+      func(
+        this.x,
+        this.y,
+        this.r,
+        getRadians(start + 90),
+        getRadians(end + 90)
+      );
       total += ((end - start) / 360) * u;
     }
 
@@ -141,16 +153,20 @@ export default {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     ctx.fillStyle = "#000";
-    // const a = new Circle("a", 150, 100, 40),
-    //   b = new Circle("b", 100, 150, 50),
-    //   c = new Circle("c", 210, 210, 80),
-    //   d = new Circle("d", 260, 100, 90);
-    const a = new Circle("a", 100, 100, 2),
-      b = new Circle("b", 98, 99, 1),
-      c = new Circle("c", 102, 99, 1),
-      d = new Circle("d", 100, 102, 1);
+    const a = new Circle("a", 150, 100, 40),
+      b = new Circle("b", 100, 150, 50),
+      c = new Circle("c", 210, 210, 80),
+      d = new Circle("d", 260, 100, 90);
+    // const a = new Circle("a", 100, 100, 2),
+    //   b = new Circle("b", 98, 99, 1),
+    //   c = new Circle("c", 102, 99, 1),
+    //   d = new Circle("d", 100, 102, 1);
+    // const a = new Circle("a", 0, 0, 2),
+    //   b = new Circle("b", -2, -1, 1),
+    //   c = new Circle("c", 2, -1, 1),
+    //   d = new Circle("d", 0, 2, 1);
 
-    console.log(this.paintingOutline([a, b, c, d]));
+    this.paintingOutline([a, b, c, d]);
   },
   methods: {
     paintingOutline(circles) {
@@ -158,20 +174,27 @@ export default {
       for (let circle of circles) {
         const others = circles.filter(other => other !== circle);
         // 绘制圆形
-        this.drawCircle(circle);
+        // this.drawCircle(circle.x, circle.y, circle.r);
         // 统计
-        total += circle.outline(others);
+        total += circle.outline(others, this.drawCircle);
       }
 
       return total;
     },
-    drawCircle({ x, y, r }) {
+    drawCircle(
+      x,
+      y,
+      r,
+      startAngle = 0,
+      endAngle = 2 * Math.PI,
+      clockWise = false
+    ) {
       const canvas = document.getElementById("canvasOverlaping");
       const ctx = canvas.getContext("2d");
       ctx.beginPath();
       ctx.lineWidth = 1;
       ctx.strokeStyle = "black";
-      ctx.arc(x, y, r, 0, 2 * Math.PI);
+      ctx.arc(x, y, r, startAngle, endAngle, clockWise);
       ctx.stroke();
     }
   }

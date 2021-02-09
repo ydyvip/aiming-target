@@ -14,7 +14,8 @@
     "format": "prettier --write '**/*.{js,jsx,ts,tsx}'",
     "lint": "eslint . --ext '.js,.jsx,.ts,.tsx'",
     "fix-memory-limit": "cross-env LIMIT=4096 increase-memory-limit",
-    "tsc": "tsc --target es2016 src/behavior/**/**/*.ts"
+    "tsc": "tsc --target es2016 src/behavior/**/**/*.ts",
+    "publish": "scp -r dist root@192.168.3.101:/usr/share/nginx/html/test/"
   },
   "dependencies": {
     "createjs-npm": "^0.2.0",

@@ -327,20 +327,20 @@ export default {
     const { xsize, ysize } = this.resizeToFit("canvasWrap");
     this.init(xsize, ysize);
     this.initMap(mapImg, xsize, ysize);
-    // 创建探测层
-    this.initLayer("detectAreaForReds");
-    // 创建探测层
-    this.initLayer("detectAreaForBlues");
+    // // 创建探测层
+    // this.initLayer("detectAreaForReds");
+    // // 创建探测层
+    // this.initLayer("detectAreaForBlues");
 
     this.syncSocket();
     this.bindShortCut();
 
-    this.stage.on("tick", () => {
-      // 绘制探测图层
-      this.pantingLayer("detectAreaForReds", "reds");
-      // 绘制探测图层
-      this.pantingLayer("detectAreaForBlues", "blues");
-    });
+    // this.stage.on("tick", () => {
+    //   // 绘制探测图层
+    //   this.pantingLayer("detectAreaForReds", "reds");
+    //   // 绘制探测图层
+    //   this.pantingLayer("detectAreaForBlues", "blues");
+    // });
 
     window.onresize = () => {
       console.log("resize");
