@@ -9,6 +9,7 @@
 </template>
 <script>
 import { getRadians } from "@/utils";
+
 function intersectLine(a, b) {
   const [s0, e0, s1, e1] = [a.start, a.end, b.start, b.end],
     s = Math.max(s0, s1),
@@ -18,22 +19,24 @@ function intersectLine(a, b) {
 }
 
 class SectorSet {
+  items = {};
   constructor(sectors) {
-    this.sets = sectors;
+    this.items = sectors;
   }
 
   get() {
-    return this.sets;
+    console.log(this.items);
+    return this.items;
   }
 
   add(other) {
     let acc = [];
-    for (let mine of this.sets) {
+    for (let mine of this.items) {
       for (let others of other.get()) {
         acc.push(intersectLine(mine, others));
       }
     }
-    this.sets = acc.filter(sector => sector.start !== sector.end);
+    this.items = acc.filter(sector => sector.start !== sector.end);
     return this;
   }
 }
@@ -65,11 +68,11 @@ class Circle {
       Dsq = Math.pow(c - a, 2) + Math.pow(d - b, 2),
       D = Math.pow(Dsq, 0.5);
     if (D >= r0 + r1) return { type: this.DISJOINT, i1: null, i2: null };
-    if (D <= Math.abs(r0 - r1))
+    if (D <= Math.abs(r0 - r1)) {
+      if (r0 < r1) {
+      } else return { type: this.CONTAINS, i1: null, i2: null };
       return { type: this.CONTAINED, i1: null, i2: null };
-    if (r0 < r1) {
     }
-    // else return { type: this.CONTAINS, i1: null, i2: null };
 
     const dd =
         0.25 *
@@ -126,7 +129,9 @@ class Circle {
     let u = 2 * this.r * Math.PI,
       total = 0;
     for (let { start, end } of sectors.get()) {
-      console.log(`${this.name}: `, this.r, start, end);
+      console.log(`${this.name}: `, start, end);
+
+      // 调用绘制圆方法
       func(
         this.x,
         this.y,
@@ -156,17 +161,11 @@ export default {
     const a = new Circle("a", 150, 100, 40),
       b = new Circle("b", 100, 150, 50),
       c = new Circle("c", 210, 210, 80),
-      d = new Circle("d", 260, 100, 90);
-    // const a = new Circle("a", 100, 100, 2),
-    //   b = new Circle("b", 98, 99, 1),
-    //   c = new Circle("c", 102, 99, 1),
-    //   d = new Circle("d", 100, 102, 1);
-    // const a = new Circle("a", 0, 0, 2),
-    //   b = new Circle("b", -2, -1, 1),
-    //   c = new Circle("c", 2, -1, 1),
-    //   d = new Circle("d", 0, 2, 1);
+      d = new Circle("d", 260, 90, 100),
+      e = new Circle("e", 260, 100, 90),
+      f = new Circle("f", 150, 100, 40);
 
-    this.paintingOutline([a, b, c, d]);
+    console.log(this.paintingOutline([a, b, c, d, e, f]));
   },
   methods: {
     paintingOutline(circles) {
