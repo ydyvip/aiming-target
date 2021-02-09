@@ -1306,9 +1306,15 @@ export default {
 
     // 动作解析
     actionsProcessing(unit, data) {
-      let deathState = unit.getChildByName("deathState");
-      let visualVector = unit.getChildByName("visualVector");
-      let healthPointBar = unit.getChildByName("healthPointBar");
+      let deathState, visualVector, healthPointBar;
+      try {
+        deathState = unit.getChildByName("deathState");
+        visualVector = unit.getChildByName("visualVector");
+        healthPointBar = unit.getChildByName("healthPointBar");
+      } catch (error) {
+        console.warn(error);
+        return;
+      }
       const { visualAngle, timestamp, hp } = data || {};
 
       // 记录时间戳计算帧数
