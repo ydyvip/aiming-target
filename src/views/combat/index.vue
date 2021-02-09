@@ -944,6 +944,8 @@ export default {
               circle.name === "reds" ? "0xff0000" : "0x0000ff"
             )
           );
+          // 虚线圆
+          shape.graphics.setStrokeDash([6, 3], 0);
           shape.graphics.arc(
             x,
             y,
@@ -951,8 +953,7 @@ export default {
             getRadians(startAngle),
             getRadians(endAngle)
           );
-          // 虚线圆
-          shape.graphics.setStrokeDash([6, 3], 0);
+
           shape.graphics.endStroke().closePath();
         });
       }
